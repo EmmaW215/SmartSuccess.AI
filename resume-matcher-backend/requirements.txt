@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+openai
+python-docx
+PyPDF2
+aiohttp
+beautifulsoup4
+requests
+firebase-admin
+stripe
+python-dotenv
