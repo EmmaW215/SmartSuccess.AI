@@ -24,13 +24,14 @@ interface Analytics {
 export default function DashboardPage() {
   const [userId] = useState("user_" + Math.random().toString(36).substr(2, 9));
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [sessions, setSessions] = useState<SessionHistory[]>([]);
+  const [sessions] = useState<SessionHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
   useEffect(() => {
     fetchAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAnalytics = async () => {
