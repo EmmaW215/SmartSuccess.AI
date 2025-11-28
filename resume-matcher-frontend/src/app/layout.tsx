@@ -5,8 +5,9 @@ const inter = Inter({ subsets: ['latin'], weight: ['400', '700'] });
 const robotoMono = Roboto_Mono({ subsets: ['latin'], weight: ['400'] });
 
 export const metadata = {
-  title: 'SmartSuccess.AI - AI-Powered Resume Matching',
-  description: 'Optimize your resume and cover letter with AI for specific job postings',
+  title: 'SmartSuccess.AI - AI-Powered Career Success Platform',
+  description: 'AI-powered resume optimization, job matching analysis, and mock interview preparation to accelerate your career success.',
+  keywords: 'AI resume, job matching, mock interview, career success, resume optimization',
 };
 
 export default function RootLayout({
