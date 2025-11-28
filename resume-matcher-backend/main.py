@@ -11,10 +11,23 @@ import aiohttp
 import json
 import os
 import openai
+import uuid
 from pathlib import Path
 from datetime import datetime
 
 import stripe
+
+# Import Interview Services
+try:
+    from services import RAGService, InterviewService, FeedbackService
+    from models import (
+        BuildContextRequest, BuildContextResponse,
+        InterviewStartResponse, InterviewMessageRequest, InterviewMessageResponse
+    )
+    INTERVIEW_SERVICES_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Interview services not available: {e}")
+    INTERVIEW_SERVICES_AVAILABLE = False
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -38,6 +51,21 @@ except Exception as e:
     db = None
 
 app = FastAPI()  # 必须在最前面
+
+# Initialize Interview Services (if available)
+rag_service = None
+interview_service = None
+feedback_service = None
+
+if INTERVIEW_SERVICES_AVAILABLE:
+    try:
+        rag_service = RAGService()
+        interview_service = InterviewService()
+        feedback_service = FeedbackService()
+        print("✅ Interview services initialized successfully")
+    except Exception as e:
+        print(f"Warning: Could not initialize interview services: {e}")
+        INTERVIEW_SERVICES_AVAILABLE = False
 
 # --- Visitor Counter Storage ---
 VISITOR_COUNT_FILE = Path("visitor_count.json")
@@ -514,6 +542,218 @@ def health():
 async def use_trial(request: Request):
     data = await request.json()
     return JSONResponse({"success": True, "message": "Trial used."})
+
+
+# ============================================
+# MOCK INTERVIEW API ENDPOINTS
+# ============================================
+
+@app.post("/api/interview/build-context")
+async def build_interview_context(
+    user_id: str = Form(...),
+    job_text: str = Form(...),
+    resume: UploadFile = File(...)
+):
+    """Build RAG context from resume and job posting for personalized interview"""
+    if not INTERVIEW_SERVICES_AVAILABLE:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Interview services not available"}
+        )
+    
+    try:
+        # Extract resume text
+        resume_text = ""
+        if resume.filename and resume.filename.endswith(".pdf"):
+            resume_text = extract_text_from_pdf(resume)
+        elif resume.filename and resume.filename.endswith((".doc", ".docx")):
+            resume_text = extract_text_from_docx(resume)
+        else:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Unsupported file format. Please upload PDF or DOCX."}
+            )
+        
+        # Build RAG context
+        result = await rag_service.build_user_context(
+            user_id=user_id,
+            resume_text=resume_text,
+            job_text=job_text
+        )
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": "Context built successfully",
+            "details": result
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to build context: {str(e)}"}
+        )
+
+
+@app.post("/api/interview/start")
+async def start_interview(user_id: str = Form(...)):
+    """Start a new mock interview session"""
+    if not INTERVIEW_SERVICES_AVAILABLE:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Interview services not available"}
+        )
+    
+    try:
+        session_id = str(uuid.uuid4())
+        session = await interview_service.create_session(session_id, user_id)
+        greeting = await interview_service.get_greeting()
+        session.add_message("assistant", greeting)
+        
+        return JSONResponse(content={
+            "session_id": session_id,
+            "message": greeting,
+            "section": session.current_section.value
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to start interview: {str(e)}"}
+        )
+
+
+@app.post("/api/interview/message")
+async def send_interview_message(
+    session_id: str = Form(...),
+    message: str = Form(...)
+):
+    """Send a message in the interview and get AI response"""
+    if not INTERVIEW_SERVICES_AVAILABLE:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Interview services not available"}
+        )
+    
+    try:
+        result = await interview_service.process_message(session_id, message)
+        
+        if "error" in result:
+            return JSONResponse(
+                status_code=404,
+                content={"error": result["error"]}
+            )
+        
+        return JSONResponse(content=result)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to process message: {str(e)}"}
+        )
+
+
+@app.get("/api/interview/session/{session_id}")
+async def get_interview_session(session_id: str):
+    """Get current interview session state"""
+    if not INTERVIEW_SERVICES_AVAILABLE:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Interview services not available"}
+        )
+    
+    try:
+        session = interview_service.get_session(session_id)
+        if not session:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "Session not found"}
+            )
+        
+        return JSONResponse(content={
+            "session_id": session.session_id,
+            "user_id": session.user_id,
+            "current_section": session.current_section.value,
+            "question_index": session.question_index,
+            "message_count": len(session.messages),
+            "created_at": session.created_at.isoformat()
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get session: {str(e)}"}
+        )
+
+
+@app.post("/api/interview/analyze-response")
+async def analyze_interview_response(
+    session_id: str = Form(...),
+    user_id: str = Form(...),
+    question: str = Form(...),
+    response: str = Form(...)
+):
+    """Analyze a single interview response using STAR method"""
+    if not INTERVIEW_SERVICES_AVAILABLE:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Interview services not available"}
+        )
+    
+    try:
+        # Get job context for better analysis
+        job_context = await rag_service.query_context(
+            user_id, "job requirements responsibilities", n_results=3
+        )
+        
+        feedback = await feedback_service.analyze_response(
+            session_id=session_id,
+            user_id=user_id,
+            question=question,
+            response=response,
+            job_context=job_context
+        )
+        
+        return JSONResponse(content=feedback.to_dict())
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to analyze response: {str(e)}"}
+        )
+
+
+@app.get("/api/interview/feedback/{session_id}")
+async def get_interview_feedback(session_id: str):
+    """Get complete feedback summary for an interview session"""
+    if not INTERVIEW_SERVICES_AVAILABLE:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Interview services not available"}
+        )
+    
+    try:
+        summary = feedback_service.get_session_summary(session_id)
+        if not summary:
+            return JSONResponse(
+                status_code=404,
+                content={"error": "No feedback found for this session"}
+            )
+        
+        return JSONResponse(content=summary.to_dict())
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get feedback: {str(e)}"}
+        )
+
+
+@app.get("/api/interview/status")
+async def get_interview_service_status():
+    """Check if interview services are available"""
+    return JSONResponse(content={
+        "available": INTERVIEW_SERVICES_AVAILABLE,
+        "services": {
+            "rag": rag_service is not None,
+            "interview": interview_service is not None,
+            "feedback": feedback_service is not None
+        }
+    })
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

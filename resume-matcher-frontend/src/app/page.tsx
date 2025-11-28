@@ -118,8 +118,8 @@ export default function Home() {
       {/* ====== LEFT SIDEBAR ====== */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-white/95 backdrop-blur-sm shadow-lg z-30 flex flex-col">
         {/* Logo / Website Name */}
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+        <div className="p-4 border-b border-gray-200">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
             SmartSuccess.AI
           </h1>
         </div>
@@ -134,15 +134,6 @@ export default function Home() {
               >
                 <span className="mr-3">🏠</span>
                 Home
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/demo"
-                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-              >
-                <span className="mr-3">📊</span>
-                Demo Report
               </Link>
             </li>
             <li>
@@ -361,8 +352,13 @@ export default function Home() {
 
       {/* ====== RIGHT SIDEBAR ====== */}
       <aside className="fixed right-0 top-0 h-full w-80 bg-white/95 backdrop-blur-sm shadow-lg z-30 flex flex-col p-6 overflow-y-auto">
+        {/* Visitor Counter - At the very top */}
+        <div className="bg-gray-50 rounded-xl p-3 mb-6">
+          <SimpleVisitorCounter className="justify-center" />
+        </div>
+
         {/* Brand Info */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-3">
             SmartSuccess.AI
           </h2>
@@ -376,7 +372,7 @@ export default function Home() {
         </div>
 
         {/* View Demo Button */}
-        <div className="mb-8">
+        <div className="mb-6">
           <Link
             href="/demo"
             className="flex items-center justify-center w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold rounded-full shadow-lg hover:from-purple-600 hover:to-indigo-600 transition-all transform hover:scale-105"
@@ -388,11 +384,6 @@ export default function Home() {
           <p className="text-xs text-gray-500 mt-2 text-center">
             See what kind of analysis you&apos;ll get
           </p>
-        </div>
-
-        {/* Visitor Counter */}
-        <div className="bg-gray-50 rounded-xl p-4 mb-6">
-          <SimpleVisitorCounter className="justify-center" />
         </div>
 
         {/* Additional Info Cards */}
