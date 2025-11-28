@@ -3,7 +3,6 @@
 // FULL REPLACEMENT - Copy this entire file
 // ============================================================
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import React, { useState, useRef } from 'react';

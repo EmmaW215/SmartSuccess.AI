@@ -6,6 +6,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 
 export default function DemoPage() {
@@ -82,12 +83,12 @@ Best regards,
               </h1>
               <p className="text-gray-500">Demo Analysis Report</p>
             </div>
-            <a
+            <Link
               href="/"
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
             >
               ← Try It Yourself
-            </a>
+            </Link>
           </div>
           
           {/* Demo Banner */}
@@ -233,12 +234,12 @@ Best regards,
 
           {/* CTA */}
           <div className="mt-10 text-center">
-            <a
+            <Link
               href="/"
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-lg transform hover:scale-105"
             >
               🚀 Create Your Analysis Now
-            </a>
+            </Link>
             <p className="text-gray-500 text-sm mt-3">
               Free to use • No sign-up required
             </p>
