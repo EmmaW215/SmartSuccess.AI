@@ -69,7 +69,7 @@ export default function Home() {
     }
 
     const formData = new FormData();
-    formData.append('job_url', jobUrl);
+    formData.append('job_text', jobUrl);  // Backend expects 'job_text' field
     formData.append('resume', resumeFile);
 
     setLoading(true);
