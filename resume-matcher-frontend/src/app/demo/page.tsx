@@ -1,46 +1,47 @@
 // ============================================================
 // FILE: resume-matcher-frontend/src/app/demo/page.tsx
-// CREATE this new file
+// Demo page with HTML formatted outputs
 // ============================================================
 
 'use client';
 
 import React from 'react';
 import Link from 'next/link';
-import ReactMarkdown from 'react-markdown';
 
 export default function DemoPage() {
   // Sample demo data showcasing the analysis output
   const demoData = {
-    job_summary: `**Position:** Senior Software Engineer
-**Company:** TechCorp Inc.
-**Location:** San Francisco, CA (Hybrid)
+    job_summary: {
+      position: 'Senior Software Engineer',
+      company: 'TechCorp Inc.',
+      location: 'San Francisco, CA (Hybrid)',
+      keyRequirements: [
+        '5+ years of experience in full-stack development',
+        'Proficiency in React, Node.js, and Python',
+        'Experience with cloud platforms (AWS/GCP)',
+        'Strong problem-solving and communication skills',
+        'Bachelor\'s degree in Computer Science or related field',
+      ],
+      preferredQualifications: [
+        'Experience with microservices architecture',
+        'Knowledge of CI/CD pipelines',
+        'Leadership experience in Agile teams',
+      ],
+    },
 
-**Key Requirements:**
-• 5+ years of experience in full-stack development
-• Proficiency in React, Node.js, and Python
-• Experience with cloud platforms (AWS/GCP)
-• Strong problem-solving and communication skills
-• Bachelor's degree in Computer Science or related field
-
-**Preferred Qualifications:**
-• Experience with microservices architecture
-• Knowledge of CI/CD pipelines
-• Leadership experience in Agile teams`,
-
-    resume_summary: `| Category | Match Status | Comments |
-|----------|-------------|----------|
-| Years of Experience | ✅ Strong | 7+ years of full-stack development experience |
-| React & Frontend | ✅ Strong | Extensive React experience with multiple production apps |
-| Node.js Backend | ✅ Strong | Built RESTful APIs and microservices |
-| Python | ✅ Moderate-Strong | Used for data processing and automation scripts |
-| Cloud Platforms (AWS) | ✅ Strong | Deployed and managed applications on AWS |
-| Problem-Solving | ✅ Strong | Led technical troubleshooting for critical systems |
-| Communication | ✅ Strong | Cross-functional collaboration experience |
-| Education | ✅ Strong | B.S. in Computer Science |
-| Microservices | ✅ Moderate-Strong | Implemented service-oriented architecture |
-| CI/CD Pipelines | ⚠️ Partial | Basic experience with Jenkins and GitHub Actions |
-| Leadership | ✅ Moderate-Strong | Mentored junior developers |`,
+    resume_comparison: [
+      { category: 'Years of Experience', status: '✅ Strong', comments: '7+ years of full-stack development experience' },
+      { category: 'React & Frontend', status: '✅ Strong', comments: 'Extensive React experience with multiple production apps' },
+      { category: 'Node.js Backend', status: '✅ Strong', comments: 'Built RESTful APIs and microservices' },
+      { category: 'Python', status: '✅ Moderate-Strong', comments: 'Used for data processing and automation scripts' },
+      { category: 'Cloud Platforms (AWS)', status: '✅ Strong', comments: 'Deployed and managed applications on AWS' },
+      { category: 'Problem-Solving', status: '✅ Strong', comments: 'Led technical troubleshooting for critical systems' },
+      { category: 'Communication', status: '✅ Strong', comments: 'Cross-functional collaboration experience' },
+      { category: 'Education', status: '✅ Strong', comments: 'B.S. in Computer Science' },
+      { category: 'Microservices', status: '✅ Moderate-Strong', comments: 'Implemented service-oriented architecture' },
+      { category: 'CI/CD Pipelines', status: '⚠️ Partial', comments: 'Basic experience with Jenkins and GitHub Actions' },
+      { category: 'Leadership', status: '✅ Moderate-Strong', comments: 'Mentored junior developers' },
+    ],
 
     match_score: 87,
 
@@ -109,31 +110,77 @@ Best regards,
         <div className="bg-white rounded-xl shadow-lg p-8 border border-blue-100">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">📊 Analysis Results</h2>
 
-          {/* Job Requirement Summary */}
+          {/* 1. Job Requirement Summary - HTML Bullet List Format */}
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <div className="w-1.5 h-7 bg-blue-500 rounded mr-3"></div>
               <span className="text-lg font-semibold text-gray-800">1. Job Requirement Summary</span>
             </div>
-            <div className="bg-blue-50 rounded-lg p-4 ml-5">
-              <p className="text-gray-700 text-base whitespace-pre-wrap">{demoData.job_summary}</p>
+            <div className="bg-blue-50 rounded-lg p-5 ml-5">
+              <div className="mb-4">
+                <p className="text-gray-800"><strong>Position:</strong> {demoData.job_summary.position}</p>
+                <p className="text-gray-800"><strong>Company:</strong> {demoData.job_summary.company}</p>
+                <p className="text-gray-800"><strong>Location:</strong> {demoData.job_summary.location}</p>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-gray-800 font-semibold mb-2">Key Requirements:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  {demoData.job_summary.keyRequirements.map((req, index) => (
+                    <li key={index} className="text-gray-700">{req}</li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div>
+                <p className="text-gray-800 font-semibold mb-2">Preferred Qualifications:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  {demoData.job_summary.preferredQualifications.map((qual, index) => (
+                    <li key={index} className="text-gray-700">{qual}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
 
-          {/* Resume - Job Posting Comparison */}
+          {/* 2. Resume vs. Job Requirements Comparison - HTML Table Format */}
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <div className="w-1.5 h-7 bg-purple-500 rounded mr-3"></div>
               <span className="text-lg font-semibold text-gray-800">2. Resume vs. Job Requirements Comparison</span>
             </div>
             <div className="ml-5 overflow-x-auto">
-              <div className="prose prose-sm max-w-none">
-                <ReactMarkdown>{demoData.resume_summary}</ReactMarkdown>
-              </div>
+              <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
+                <thead>
+                  <tr className="bg-purple-100">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-purple-800 border-b border-purple-200">Category</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-purple-800 border-b border-purple-200">Match Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-purple-800 border-b border-purple-200">Comments</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {demoData.resume_comparison.map((row, index) => (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-4 py-3 text-sm text-gray-800 border-b border-gray-100 font-medium">{row.category}</td>
+                      <td className="px-4 py-3 text-sm border-b border-gray-100">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          row.status.includes('Strong') ? 'bg-green-100 text-green-800' :
+                          row.status.includes('Moderate') ? 'bg-yellow-100 text-yellow-800' :
+                          row.status.includes('Partial') ? 'bg-orange-100 text-orange-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {row.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-100">{row.comments}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Match Score */}
+          {/* 3. Match Score */}
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <div className="w-1.5 h-7 bg-green-500 rounded mr-3"></div>
@@ -157,7 +204,7 @@ Best regards,
             </div>
           </div>
 
-          {/* Tailored Resume Summary */}
+          {/* 4. Tailored Resume Summary */}
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <div className="w-1.5 h-7 bg-purple-500 rounded mr-3"></div>
@@ -171,7 +218,7 @@ Best regards,
             </p>
           </div>
 
-          {/* Tailored Work Experience */}
+          {/* 5. Tailored Work Experience */}
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <div className="w-1.5 h-7 bg-orange-500 rounded mr-3"></div>
@@ -193,7 +240,7 @@ Best regards,
             </p>
           </div>
 
-          {/* Cover Letter */}
+          {/* 6. Cover Letter */}
           <div className="mb-8">
             <div className="flex items-center mb-3">
               <div className="w-1.5 h-7 bg-teal-500 rounded mr-3"></div>

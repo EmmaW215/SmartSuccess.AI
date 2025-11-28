@@ -137,24 +137,22 @@ export default function Home() {
               </Link>
             </li>
             <li>
-              <button
-                disabled
-                className="flex items-center w-full px-4 py-3 text-gray-400 rounded-lg cursor-not-allowed"
+              <Link
+                href="/interview"
+                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition"
               >
                 <span className="mr-3">🎤</span>
                 Mock Interview
-                <span className="ml-auto text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Soon</span>
-              </button>
+              </Link>
             </li>
             <li>
-              <button
-                disabled
-                className="flex items-center w-full px-4 py-3 text-gray-400 rounded-lg cursor-not-allowed"
+              <Link
+                href="/dashboard"
+                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition"
               >
                 <span className="mr-3">📁</span>
                 My Records
-                <span className="ml-auto text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Soon</span>
-              </button>
+              </Link>
             </li>
             <li>
               <Link
@@ -325,16 +323,15 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Coming Soon: Mock Interview Button */}
+              {/* Mock Interview Button */}
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="text-center">
-                  <button
-                    disabled
-                    className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-xl text-lg font-semibold cursor-not-allowed opacity-70"
+                  <Link
+                    href="/interview"
+                    className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl text-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
                   >
-                    🎤 Mock Interview
-                    <span className="ml-2 px-2 py-1 bg-yellow-400 text-yellow-900 text-xs rounded-full">Coming Soon</span>
-                  </button>
+                    🎤 Start Mock Interview
+                  </Link>
                   <p className="text-gray-500 text-sm mt-2">
                     Voice-powered interview practice based on your resume and job posting
                   </p>
@@ -398,10 +395,10 @@ export default function Home() {
             <p className="text-sm text-purple-700">Generate tailored cover letters for each application</p>
           </div>
           
-          <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
+          <Link href="/interview" className="block bg-orange-50 rounded-xl p-4 border border-orange-100 hover:bg-orange-100 transition">
             <h4 className="font-semibold text-orange-800 mb-2">🎤 Mock Interview</h4>
-            <p className="text-sm text-orange-700">Voice-powered interview practice (Coming Soon)</p>
-          </div>
+            <p className="text-sm text-orange-700">Voice-powered interview practice with STAR feedback</p>
+          </Link>
         </div>
 
         {/* User Login Placeholder */}
