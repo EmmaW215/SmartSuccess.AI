@@ -7,7 +7,7 @@ pydantic>=2.5.0
 # AI/ML
 openai>=1.0.0
 groq>=0.4.0
-chromadb>=0.5.0
+# chromadb>=0.5.0  # Commented out - heavy dependency, only needed for Interview RAG
 
 # Document Processing
 python-docx
