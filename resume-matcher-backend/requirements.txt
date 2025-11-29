@@ -7,7 +7,8 @@ pydantic>=2.5.0
 # AI/ML
 openai>=1.0.0
 groq>=0.4.0
-# chromadb>=0.5.0  # Commented out - heavy dependency, only needed for Interview RAG
+numpy>=1.24.0  # For lightweight vector similarity calculations
+# chromadb>=0.5.0  # Not needed - using lightweight in-memory vector store
 
 # Document Processing
 python-docx

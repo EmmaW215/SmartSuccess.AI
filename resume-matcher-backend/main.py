@@ -387,7 +387,7 @@ Return the output as HTML with proper <ul>, <li>, <strong>, and <br> tags for fo
 
 Follow this HTML structure:
 
-<h3>Job Description Summary</h3>
+<p></p>
 <ul>
   <li><strong>Position Title:</strong> ...</li>
   <li><strong>Company Name:</strong> ...</li>
@@ -397,18 +397,21 @@ Follow this HTML structure:
   <li><strong>Requisition ID:</strong> ...</li>
   <li><strong>Reporting To:</strong> ...</li>
   <li><strong>Compensation:</strong>
+    <p></p>
     <ul>
       <li><strong>Salary/Rate:</strong> ...</li>
       <li><strong>Benefits:</strong> ...</li>
       <li><strong>Environment/Company Culture:</strong> ...</li>
     </ul>
   </li>
+  <p></p>
   <li><strong>Key Responsibilities:</strong>
     <ul>
       <li>...</li>
       <li>...</li>
     </ul>
   </li>
+  <p></p>
   <li><strong>Core Requirements (Required Skills):</strong>
     <ul>
       <li><strong>Technical skills:</strong>
@@ -416,6 +419,7 @@ Follow this HTML structure:
           <li>...</li>
         </ul>
       </li>
+      <p></p>
       <li><strong>Soft skills:</strong>
         <ul>
           <li>...</li>
@@ -423,17 +427,20 @@ Follow this HTML structure:
       </li>
     </ul>
   </li>
+  <p></p>
   <li><strong>Preferred (Nice-to-Have):</strong>
     <ul>
       <li><strong>Technical skills:</strong> ...</li>
       <li><strong>Soft skills:</strong> ...</li>
     </ul>
   </li>
+  <p></p>
   <li><strong>Cultural Fit:</strong>
     <ul>
       <li>...</li>
     </ul>
   </li>
+  <p></p>
 </ul>
 
 Here is the job posting content:
@@ -515,17 +522,8 @@ Here is the job posting summary:
         # ============================================
         # PART 3: Tailored Resume Summary
         # ============================================
-        tailored_resume_summary_prompt = f"""Provide a revised one-paragraph summary based on the user resume and the job posting. Make sure this summary highlights the user's key skills and work experiences which more closely matched with the job requirements in job posting. Please limit the overall summary within 1800 characters.
-
-IMPORTANT OUTPUT RULES:
-- Output ONLY the plain text summary content
-- Do NOT include any HTML tags like <p>, <div>, <html>, etc.
-- Do NOT include markdown code blocks like ```html or ```
-- Do NOT include any wrapper tags or formatting symbols
-- Just output the pure summary text directly
-- Maintain 1.2 line spacing between sentences
-- Follow resume format: no first-person pronouns (I, my, me)
-
+        tailored_resume_summary_prompt = f"""Provide a revised one-paragraph summary based on the user resume and the job posting. Make sure this summary highlights the user's key skills and work experiences which more closely matched with the job requirements in job posting.No first-person pronouns should be used. Please limit the overall summary within 1800 characters. IMPORTANT OUTPUT RULES: - Output ONLY the plain text summary content - Do NOT include any HTML tags like <p>, <div>, <html>, etc. - Do NOT include markdown code blocks like ```html or ``` - Do NOT include any wrapper tags or formatting symbols - Just output the pure summary text directly - Maintain 1.2 line spacing between sentences - Follow resume format: no first-person pronouns (I, my, me)
+        
 Here is the resume content:
 {resume_text}
 
@@ -550,9 +548,7 @@ Here is the job posting:
         # ============================================
         # PART 4: Tailored Work Experience
         # ============================================
-        tailored_work_experience_prompt = f"""Find the latest work experiences from the resume and highlight the ones which are better matched the job requirements. Please refine these best fit work experiences and provide the revised work experience content. Organize the output into a clean bullet list. Focus on the most recent and relevant experiences that align with the job requirements. Keep each bullet point concise and impactful. Make sure there are line breaks between each paragraph. Ensure the output uses proper bullet list formatting. Maintain 1.2 line spacing.
-
-To modify the working experiences from user's resume, better group and combine it, highlight the key accomplishments and achievements, and make it more fit for the job requirements. Ensure the modified contents reflect the truths, no grammar errors, but please keep the original words and language styles as much as possible.
+        tailored_work_experience_prompt = f"""Find the latest work experiences from the resume and highlight the ones which are better matched the job requirements. Please refine these best fit work experiences and provide the revised work experience content. Organize the output into a clean bullet list. Focus on the most recent and relevant experiences that align with the job requirements. Keep each bullet point concise and impactful. Make sure there are line breaks between each paragraph. Ensure the output uses proper bullet list formatting. Maintain 1.2 line spacing. To modify the working experiences from user's resume, better group and combine it, highlight the key accomplishments and achievements, and make it more fit for the job requirements. Ensure the modified contents reflect the truths, no grammar errors, but please keep the original words and language styles as much as possible.
 
 Here is the resume content:
 {resume_text}
@@ -580,11 +576,7 @@ Here is the job posting:
         # ============================================
         # PART 5: Cover Letter
         # ============================================
-        cover_letter_prompt = f"""Please according to the resume, provide a formal cover letter with a Subject for this job application. The "job position" at "the company" - those names in the cover letter for the application should be the same as what being used in the job posting.
-
-The cover letter should show and highlight the user's real experiences, skill sets and key strengths which best fit the job requirements according to the job posting. Then express the user's passions for the position, the transferrable of the user's previous work experiences and technical skills to benefit this position, and emphasis that the user is very adaptable, a faster learner, and how confident can contribute to the team and the company, and the appreciation for a future interview opportunity.
-
-The overall tone of the cover letter should be confident, honest, and professional. The cover letters should be written in the first person. Make sure there are line breaks between each paragraph.
+        cover_letter_prompt = f"""Please according to the resume, provide a formal cover letter with a Subject for this job application. The "job position" at "the company" - those names in the cover letter for the application should be the same as what being used in the job posting. The cover letter should show and highlight the user's real experiences, skill sets and key strengths which best fit the job requirements according to the job posting. Then express the user's passions for the position, the transferrable of the user's previous work experiences and technical skills to benefit this position, and emphasis that the user is very adaptable, a faster learner, and how confident can contribute to the team and the company, and the appreciation for a future interview opportunity. The overall tone of the cover letter should be confident, honest, and professional. The cover letters should be written in the first person. Make sure there are line breaks between each paragraph.
 
 Here is the resume content:
 {resume_text}

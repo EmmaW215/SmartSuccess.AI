@@ -253,7 +253,7 @@ export default function Home() {
               <div className="mb-6">
                 <div className="flex items-center mb-2">
                   <div className="w-1.5 h-7 bg-blue-500 rounded mr-3"></div>
-                  <span className="text-lg font-semibold text-gray-800">Job Requirement Summary</span>
+                  <span className="text-lg font-semibold text-gray-800">Job Description Summary</span>
                 </div>
                 <div 
                   className="text-gray-700 text-base ml-5 job-summary-content"
@@ -265,7 +265,7 @@ export default function Home() {
               <div className="mb-6">
                 <div className="flex items-center mb-2">
                   <div className="w-1.5 h-7 bg-purple-500 rounded mr-3"></div>
-                  <span className="text-lg font-semibold text-gray-800">Resume - Job Posting Comparison</span>
+                  <span className="text-lg font-semibold text-gray-800">Resume - Job Posting Comparison Table</span>
                 </div>
                 <div 
                   className="ml-5 comparison-table-content"
@@ -294,7 +294,7 @@ export default function Home() {
               <div className="mb-6">
                 <div className="flex items-center mb-2">
                   <div className="w-1.5 h-7 bg-purple-500 rounded mr-3"></div>
-                  <span className="text-lg font-semibold text-gray-800">Tailored Resume Summary</span>
+                  <span className="text-lg font-semibold text-gray-800">Refined Resume Summary</span>
                 </div>
                 <p className="text-gray-700 text-base ml-5">{response.tailored_resume_summary || 'No tailored resume summary available.'}</p>
               </div>
@@ -303,7 +303,7 @@ export default function Home() {
               <div className="mb-6">
                 <div className="flex items-center mb-2">
                   <div className="w-1.5 h-7 bg-orange-500 rounded mr-3"></div>
-                  <span className="text-lg font-semibold text-gray-800">Tailored Resume Work Experience</span>
+                  <span className="text-lg font-semibold text-gray-800">Refined Resume Work Experience</span>
                 </div>
                 <ul className="list-disc list-inside text-gray-700 text-base ml-5 space-y-2">
                   {response.tailored_work_experience && response.tailored_work_experience.length > 0 ? (
