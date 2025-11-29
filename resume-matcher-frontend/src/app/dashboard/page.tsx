@@ -22,9 +22,10 @@ interface Analytics {
 
 // ============ MAIN COMPONENT ============
 export default function DashboardPage() {
-  const [userId] = useState("user_" + Math.random().toString(36).substr(2, 9));
+  // Use consistent userId - same as interview page
+  const [userId] = useState("demo-user");
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [sessions] = useState<SessionHistory[]>([]);
+  const [sessions, setSessions] = useState<SessionHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://smartsuccess-ai.onrender.com";
@@ -40,10 +41,14 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json();
         setAnalytics(data);
+        // Also set sessions if provided
+        if (data.sessions) {
+          setSessions(data.sessions);
+        }
       }
     } catch (error) {
       console.log("Could not fetch analytics:", error);
-      // Set mock data for demo
+      // Set default data
       setAnalytics({
         totalSessions: 0,
         averageScore: 0,

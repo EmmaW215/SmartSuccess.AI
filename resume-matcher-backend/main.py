@@ -397,14 +397,16 @@ Follow this HTML structure:
   <li><strong>Requisition ID:</strong> ...</li>
   <li><strong>Reporting To:</strong> ...</li>
   <li><strong>Compensation:</strong>
-    <p></p>
+    <p> </p>
     <ul>
       <li><strong>Salary/Rate:</strong> ...</li>
       <li><strong>Benefits:</strong> ...</li>
       <li><strong>Environment/Company Culture:</strong> ...</li>
     </ul>
+    <p> </p>
   </li>
   <p></p>
+  <hr>
   <li><strong>Key Responsibilities:</strong>
     <ul>
       <li>...</li>
@@ -412,6 +414,7 @@ Follow this HTML structure:
     </ul>
   </li>
   <p></p>
+  <hr>
   <li><strong>Core Requirements (Required Skills):</strong>
     <ul>
       <li><strong>Technical skills:</strong>
@@ -420,6 +423,7 @@ Follow this HTML structure:
         </ul>
       </li>
       <p></p>
+      <hr>
       <li><strong>Soft skills:</strong>
         <ul>
           <li>...</li>
@@ -428,6 +432,7 @@ Follow this HTML structure:
     </ul>
   </li>
   <p></p>
+  <hr>
   <li><strong>Preferred (Nice-to-Have):</strong>
     <ul>
       <li><strong>Technical skills:</strong> ...</li>
@@ -435,6 +440,7 @@ Follow this HTML structure:
     </ul>
   </li>
   <p></p>
+  <hr>
   <li><strong>Cultural Fit:</strong>
     <ul>
       <li>...</li>
@@ -522,7 +528,7 @@ Here is the job posting summary:
         # ============================================
         # PART 3: Tailored Resume Summary
         # ============================================
-        tailored_resume_summary_prompt = f"""Provide a revised one-paragraph summary based on the user resume and the job posting. Make sure this summary highlights the user's key skills and work experiences which more closely matched with the job requirements in job posting.No first-person pronouns should be used. Please limit the overall summary within 1800 characters. IMPORTANT OUTPUT RULES: - Output ONLY the plain text summary content - Do NOT include any HTML tags like <p>, <div>, <html>, etc. - Do NOT include markdown code blocks like ```html or ``` - Do NOT include any wrapper tags or formatting symbols - Just output the pure summary text directly - Maintain 1.2 line spacing between sentences - Follow resume format: no first-person pronouns (I, my, me)
+        tailored_resume_summary_prompt = f"""Provide a revised one-paragraph summary based on the user resume and the job posting. Make sure this summary highlights the user's key skills and work experiences which more closely matched with the job requirements in job posting.No personal pronouns should be used. Please limit the overall summary within 1800 characters. IMPORTANT OUTPUT RULES: - Output ONLY the plain text summary content - Do NOT include any HTML tags like <p>, <div>, <html>, etc. - Do NOT include markdown code blocks like ```html or ``` - Do NOT include any wrapper tags or formatting symbols - Just output the pure summary text directly - Maintain 1.2 line spacing between sentences - Follow resume format: no first-person pronouns (I, my, me)
         
 Here is the resume content:
 {resume_text}
@@ -771,7 +777,7 @@ async def send_interview_message(
     session_id: str = Form(...),
     message: str = Form(...)
 ):
-    """Send a message in the interview and get AI response"""
+    """Send a message in the interview and get AI response with real-time feedback"""
     if not INTERVIEW_SERVICES_AVAILABLE:
         return JSONResponse(
             status_code=503,
@@ -779,6 +785,20 @@ async def send_interview_message(
         )
     
     try:
+        # Get session to check current state
+        session = interview_service.get_session(session_id)
+        current_section = session.current_section.value if session else None
+        previous_question = None
+        
+        # If user is answering a question (not in greeting/menu), capture the question
+        if session and current_section not in ["greeting", "menu"]:
+            # Get the last assistant message as the question
+            for msg in reversed(session.messages):
+                if msg.get("role") == "assistant":
+                    previous_question = msg.get("content", "")
+                    break
+        
+        # Process the message
         result = await interview_service.process_message(session_id, message)
         
         if "error" in result:
@@ -786,6 +806,30 @@ async def send_interview_message(
                 status_code=404,
                 content={"error": result["error"]}
             )
+        
+        # If user answered a question, analyze their response
+        feedback_data = None
+        if previous_question and session and current_section not in ["greeting", "menu"]:
+            try:
+                feedback = await feedback_service.analyze_response(
+                    session_id=session_id,
+                    user_id=session.user_id,
+                    question=previous_question,
+                    response=message,
+                    job_context=None  # Could add RAG context here
+                )
+                feedback_data = feedback.to_dict()
+                
+                # Also get session summary for cumulative feedback
+                session_summary = feedback_service.get_session_summary(session_id)
+                if session_summary:
+                    result["session_feedback"] = session_summary.to_dict()
+            except Exception as e:
+                print(f"Feedback analysis error: {e}")
+        
+        # Add individual question feedback to response
+        if feedback_data:
+            result["feedback"] = feedback_data
         
         return JSONResponse(content=result)
     except Exception as e:
@@ -899,6 +943,55 @@ async def get_interview_service_status():
             "feedback": feedback_service is not None
         }
     })
+
+
+@app.get("/api/interview/analytics/{user_id}")
+async def get_user_analytics(user_id: str):
+    """Get analytics and history for a user's interview sessions"""
+    if not INTERVIEW_SERVICES_AVAILABLE:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Interview services not available"}
+        )
+    
+    try:
+        # Collect all session feedback for this user
+        user_sessions = []
+        all_strengths = []
+        all_growth_areas = []
+        scores = []
+        
+        for session_id, session_feedback in feedback_service.session_feedback.items():
+            if session_feedback.user_id == user_id:
+                session_feedback.calculate_overall_score()
+                user_sessions.append({
+                    "sessionId": session_id,
+                    "date": session_feedback.created_at,
+                    "score": session_feedback.overall_score,
+                    "questionsAnswered": len(session_feedback.questions_feedback)
+                })
+                scores.append(session_feedback.overall_score)
+                all_strengths.extend(session_feedback.aggregated_strengths)
+                all_growth_areas.extend(session_feedback.aggregated_growth_areas)
+        
+        # Calculate aggregated analytics
+        from collections import Counter
+        top_strengths = [item for item, _ in Counter(all_strengths).most_common(5)]
+        focus_areas = [item for item, _ in Counter(all_growth_areas).most_common(5)]
+        
+        return JSONResponse(content={
+            "totalSessions": len(user_sessions),
+            "averageScore": round(sum(scores) / len(scores), 1) if scores else 0,
+            "improvementTrend": scores[-10:] if scores else [],  # Last 10 sessions
+            "topStrengths": top_strengths,
+            "focusAreas": focus_areas,
+            "sessions": sorted(user_sessions, key=lambda x: x["date"], reverse=True)
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to get analytics: {str(e)}"}
+        )
 
 
 if __name__ == "__main__":

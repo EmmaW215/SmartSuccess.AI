@@ -237,9 +237,48 @@ export default function InterviewPage() {
       setMessages((prev) => [...prev, assistantMsg]);
       speak(data.response);
 
-      // Update feedback if provided
+      // Update feedback if provided (individual question feedback)
       if (data.feedback) {
-        setFeedback(data.feedback);
+        console.log("Question feedback received:", data.feedback);
+        // Update with session feedback if available, otherwise create from individual feedback
+        if (data.session_feedback) {
+          setFeedback(data.session_feedback);
+        } else {
+          // Create a session feedback structure from individual feedback
+          setFeedback((prevFeedback) => {
+            const newQuestionFeedback = {
+              question: data.feedback.question,
+              response: data.feedback.response,
+              activeListening: data.feedback.activeListening,
+              starScore: data.feedback.starScore,
+              strengths: data.feedback.strengths,
+              growthAreas: data.feedback.growthAreas,
+            };
+            
+            if (prevFeedback) {
+              return {
+                ...prevFeedback,
+                questionsFeedback: [...prevFeedback.questionsFeedback, newQuestionFeedback],
+                aggregatedStrengths: [...new Set([...prevFeedback.aggregatedStrengths, ...data.feedback.strengths])].slice(0, 5),
+                aggregatedGrowthAreas: [...new Set([...prevFeedback.aggregatedGrowthAreas, ...data.feedback.growthAreas])].slice(0, 5),
+                overallScore: data.feedback.starScore?.average ? (data.feedback.starScore.average / 5) * 100 : prevFeedback.overallScore,
+              };
+            } else {
+              return {
+                overallScore: data.feedback.starScore?.average ? (data.feedback.starScore.average / 5) * 100 : 0,
+                questionsFeedback: [newQuestionFeedback],
+                aggregatedStrengths: data.feedback.strengths || [],
+                aggregatedGrowthAreas: data.feedback.growthAreas || [],
+              };
+            }
+          });
+        }
+      }
+      
+      // If session feedback is provided separately
+      if (data.session_feedback) {
+        console.log("Session feedback received:", data.session_feedback);
+        setFeedback(data.session_feedback);
       }
     } catch (error) {
       console.error("Message failed:", error);
