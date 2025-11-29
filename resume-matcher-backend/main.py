@@ -375,70 +375,155 @@ def extract_text_from_url(url: str) -> str:
 
 async def compare_texts(job_text: str, resume_text: str) -> dict:
     try:
-        # a. Job Summary
-        job_summary_prompt = (
-            "Please read the following job posting content:\n\n"
-            f"{job_text}\n\n"
-            "Summarize the job descriptions..."
-        )
-        job_summary = await call_ai_api(job_summary_prompt)
-        job_summary = f"\n\n {job_summary}"
-
-        # b. Resume Summary with Comparison Table
-        resume_summary_prompt = (
-            "Read the following resume content:\n\n"
-            f"{resume_text}\n\n"
-            "And the following job summary:\n\n"
-            f"{job_summary}\n\n"
-            "Output a comparison table..."
-        )
-        resume_summary = await call_ai_api(resume_summary_prompt)
-        resume_summary = f"\n\n{resume_summary}"
-
         import re
+        
+        # ============================================
+        # PART 1: Job Description Summary (Clean Bullet List)
+        # ============================================
+        job_summary_prompt = f"""Summarize the job descriptions by extracting and organizing the following information into a clean bullet list format. Please extract the actual information from the job posting. Using the structure below, organize the output into a clean bullet list format. If any information is not available in the job posting, use 'Not specified' for that item. Ensure the output is clean, well-structured, and uses proper bullet list formatting. Maintain 1.2 line spacing.
+
+Follow this format to list the details (leave it blank if no related details from the job posting):
+
+**Job Description Summary (Clean Bullet List)**
+• **Position Title:** ...
+• **Company Name:** ...
+• **Department:** ...
+• **Location:** ...
+• **Employment Type:** Full-time/Part-time/Remote/Contract & Length/etc...
+• **Requisition ID:** ...
+• **Reporting To:** ...
+• **Compensation:**
+  ○ **Salary/Rate:** ...
+  ○ **Benefits:** ...
+  ○ **Environment/Company Culture:** ...
+• **Key Responsibilities:**
+  ○ ...
+  ○ ...
+  ○ ...
+• **Core Requirements (Required Skills):**
+  i. **Technical skills:**
+  ○ ...
+  ○ ...
+  ii. **Soft skills:**
+  ○ ...
+  ○ ...
+• **Preferred (Nice-to-Have/Stand-Outs):**
+  i. **Technical skills:**
+  ○ ...
+  ii. **Soft skills:**
+  ○ ...
+• **Cultural Fit:**
+  ○ ...
+
+Here is the job posting content:
+
+{job_text}
+"""
+        job_summary = await call_ai_api(job_summary_prompt)
+
+        # ============================================
+        # PART 2: Comparison Table with Match Score
+        # ============================================
+        resume_summary_prompt = f"""Output a comparison table between the job posting and the uploaded resume. List in the table format with Four columns: 
+1. **Categories** (list all the key requirements regarding position responsibilities, technical and soft skills, certifications, and educations from the job requirements, each key requirement in one line)
+2. **Match Status** (four status will be used: ✅ Strong / 🔷 Moderate-strong / ⚠️ Partial / ❌ Lack)
+3. **Comments** (very precise comment on how the user's experiences matches with the job requirement)
+4. **Match Weight** (If the Match Status is Strong, assign number 1; If the Match Status is Moderate-Strong, assign number 0.8; If the Match Status is Partial, assign number 0.5; If the Match Status is Lack, assign number 0.1)
+
+Do not add any explanation or extra text. The table should be styled to look clean and modern.
+
+Below the table, based on the Match Weight column, calculate the percentage of the matching score using these formulas:
+- Sum of total Match Weight numbers = sum of all numbers in the Match Weight column
+- Count of total Match Weight numbers = count of all numbers in the Match Weight column
+- Match Score (%) = (Sum of total Match Weight numbers) / (Count of total Match Weight numbers) * 100
+
+Return the final calculation results of Sum of total Match Weight numbers, Count of total Match Weight numbers, and Match Score as the final percentage number, rounded to two decimal places.
+
+At the VERY END of your response, output ONLY the match score number on its own line, like this:
+MATCH_SCORE: 75.5
+
+Here is the resume content:
+{resume_text}
+
+Here is the job posting summary:
+{job_summary}
+"""
+        resume_summary = await call_ai_api(resume_summary_prompt)
+        
+        # Extract match score from the response
+        match_score = 0
         lines = resume_summary.strip().splitlines()
-        match_score_test = None
-        if lines:
-            last_line = lines[-1].strip()
-            match = re.search(r"([0-9]+(?:\.[0-9]+)?)", last_line)
+        for line in reversed(lines):
+            if "MATCH_SCORE:" in line:
+                try:
+                    score_str = line.replace("MATCH_SCORE:", "").strip().replace("%", "")
+                    match_score = float(score_str)
+                    break
+                except:
+                    pass
+            # Also try to find percentage in the last few lines
+            match = re.search(r"(\d+(?:\.\d+)?)\s*%", line)
             if match:
-                match_score_test = float(match.group(1))
-                if match_score_test <= 1:
-                    match_score_test = round(match_score_test * 100, 2)
-            else:
-                match_score_test = last_line
+                match_score = float(match.group(1))
+                break
 
-        try:
-            match_score = float(match_score_test.strip().replace("%", "")) if match_score_test else 0
-        except Exception:
-            match_score = 0
+        # ============================================
+        # PART 3: Tailored Resume Summary
+        # ============================================
+        tailored_resume_summary_prompt = f"""Provide a revised one-paragraph summary based on the user resume and the job posting. Make sure this summary highlights the user's key skills and work experiences which more closely matched with the job requirements in job posting. Please limit the overall summary within 1800 characters. The output should be in html format and should maintain a simple, modern style. Maintain 1.2 line spacing. Follow resume format to have no First-person pronouns being used.
 
-        # d. Tailored Resume Summary
-        tailored_resume_summary_prompt = (
-            "Provide a revised one-paragraph summary..."
-        )
+Here is the resume content:
+{resume_text}
+
+Here is the job posting:
+{job_text}
+"""
         tailored_resume_summary = await call_ai_api(tailored_resume_summary_prompt)
-        tailored_resume_summary = f"\n{tailored_resume_summary}"
 
-        # e. Tailored Work Experience
-        tailored_work_experience_prompt = (
-            "Find the latest work experiences..."
-        )
+        # ============================================
+        # PART 4: Tailored Work Experience
+        # ============================================
+        tailored_work_experience_prompt = f"""Find the latest work experiences from the resume and highlight the ones which are better matched the job requirements. Please refine these best fit work experiences and provide the revised work experience content. Organize the output into a clean bullet list using the structure above. Focus on the most recent and relevant experiences that align with the job requirements. Keep each bullet point concise and impactful. Make sure there are line breaks between each paragraph. Ensure the output uses proper bullet list formatting. Maintain 1.2 line spacing.
+
+To modify the working experiences from user's resume, better group and combine it, highlight the key accomplishments and achievements, and make it more fit for the job requirements. Ensure the modified contents reflect the truths, no grammar errors, but please keep the original words and language styles as much as possible.
+
+Return the output as HTML with proper <ul>, <li>, <strong>, and <br/> tags for formatting.
+
+Here is the resume content:
+{resume_text}
+
+Here is the job posting:
+{job_text}
+"""
         tailored_work_experience_html = await call_ai_api(tailored_work_experience_prompt)
         
-        # Process output to list
+        # Process output to list - keep HTML formatting
         tailored_work_experience = []
-        # Simple processing, assuming AI returns HTML list
         soup = BeautifulSoup(tailored_work_experience_html, "html.parser")
         for li in soup.find_all("li"):
-            tailored_work_experience.append(li.get_text())
+            # Keep HTML content
+            tailored_work_experience.append(str(li))
+        
+        # If no <li> tags found, split by newlines or return as single item
+        if not tailored_work_experience:
+            tailored_work_experience = [tailored_work_experience_html]
 
-        # f. Cover Letter
-        cover_letter_prompt = (
-            "Provide a formal cover letter..."
-        )
+        # ============================================
+        # PART 5: Cover Letter
+        # ============================================
+        cover_letter_prompt = f"""Please according to the resume, provide a formal cover letter with a Subject for this job application. The "job position" at "the company" - those names in the cover letter for the application should be the same as what being used in the job posting.
+
+The cover letter should show and highlight the user's real experiences, skill sets and key strengths which best fit the job requirements according to the job posting. Then express the user's passions for the position, the transferrable of the user's previous work experiences and technical skills to benefit this position, and emphasis that the user is very adaptable, a faster learner, and how confident can contribute to the team and the company, and the appreciation for a future interview opportunity.
+
+The overall tone of the cover letter should be confident, honest, and professional. The cover letters should be written in the first person. Make sure there are line breaks between each paragraph.
+
+Here is the resume content:
+{resume_text}
+
+Here is the job posting:
+{job_text}
+"""
         cover_letter = await call_ai_api(cover_letter_prompt)
-        cover_letter = f"\n{cover_letter}"
 
         return {
             "job_summary": job_summary,
