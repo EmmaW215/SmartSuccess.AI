@@ -378,42 +378,62 @@ async def compare_texts(job_text: str, resume_text: str) -> dict:
         import re
         
         # ============================================
-        # PART 1: Job Description Summary (Clean Bullet List)
+        # PART 1: Job Description Summary (Clean Bullet List in HTML)
         # ============================================
-        job_summary_prompt = f"""Summarize the job descriptions by extracting and organizing the following information into a clean bullet list format. Please extract the actual information from the job posting. Using the structure below, organize the output into a clean bullet list format. If any information is not available in the job posting, use 'Not specified' for that item. Ensure the output is clean, well-structured, and uses proper bullet list formatting. Maintain 1.2 line spacing.
+        job_summary_prompt = f"""Summarize the job descriptions by extracting and organizing the following information into a clean HTML bullet list format. Please extract the actual information from the job posting. If any information is not available in the job posting, use 'Not specified' for that item.
 
-Follow this format to list the details (leave it blank if no related details from the job posting):
+Return the output as HTML with proper <ul>, <li>, <strong>, and <br> tags for formatting. Use nested <ul> for sub-items. Do NOT use markdown formatting (no **, no •, no ○). Only use HTML tags.
 
-**Job Description Summary (Clean Bullet List)**
-• **Position Title:** ...
-• **Company Name:** ...
-• **Department:** ...
-• **Location:** ...
-• **Employment Type:** Full-time/Part-time/Remote/Contract & Length/etc...
-• **Requisition ID:** ...
-• **Reporting To:** ...
-• **Compensation:**
-  ○ **Salary/Rate:** ...
-  ○ **Benefits:** ...
-  ○ **Environment/Company Culture:** ...
-• **Key Responsibilities:**
-  ○ ...
-  ○ ...
-  ○ ...
-• **Core Requirements (Required Skills):**
-  i. **Technical skills:**
-  ○ ...
-  ○ ...
-  ii. **Soft skills:**
-  ○ ...
-  ○ ...
-• **Preferred (Nice-to-Have/Stand-Outs):**
-  i. **Technical skills:**
-  ○ ...
-  ii. **Soft skills:**
-  ○ ...
-• **Cultural Fit:**
-  ○ ...
+Follow this HTML structure:
+
+<h3>Job Description Summary</h3>
+<ul>
+  <li><strong>Position Title:</strong> ...</li>
+  <li><strong>Company Name:</strong> ...</li>
+  <li><strong>Department:</strong> ...</li>
+  <li><strong>Location:</strong> ...</li>
+  <li><strong>Employment Type:</strong> ...</li>
+  <li><strong>Requisition ID:</strong> ...</li>
+  <li><strong>Reporting To:</strong> ...</li>
+  <li><strong>Compensation:</strong>
+    <ul>
+      <li><strong>Salary/Rate:</strong> ...</li>
+      <li><strong>Benefits:</strong> ...</li>
+      <li><strong>Environment/Company Culture:</strong> ...</li>
+    </ul>
+  </li>
+  <li><strong>Key Responsibilities:</strong>
+    <ul>
+      <li>...</li>
+      <li>...</li>
+    </ul>
+  </li>
+  <li><strong>Core Requirements (Required Skills):</strong>
+    <ul>
+      <li><strong>Technical skills:</strong>
+        <ul>
+          <li>...</li>
+        </ul>
+      </li>
+      <li><strong>Soft skills:</strong>
+        <ul>
+          <li>...</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Preferred (Nice-to-Have):</strong>
+    <ul>
+      <li><strong>Technical skills:</strong> ...</li>
+      <li><strong>Soft skills:</strong> ...</li>
+    </ul>
+  </li>
+  <li><strong>Cultural Fit:</strong>
+    <ul>
+      <li>...</li>
+    </ul>
+  </li>
+</ul>
 
 Here is the job posting content:
 
@@ -422,25 +442,49 @@ Here is the job posting content:
         job_summary = await call_ai_api(job_summary_prompt)
 
         # ============================================
-        # PART 2: Comparison Table with Match Score
+        # PART 2: Comparison Table with Match Score (HTML Table)
         # ============================================
-        resume_summary_prompt = f"""Output a comparison table between the job posting and the uploaded resume. List in the table format with Four columns: 
-1. **Categories** (list all the key requirements regarding position responsibilities, technical and soft skills, certifications, and educations from the job requirements, each key requirement in one line)
-2. **Match Status** (four status will be used: ✅ Strong / 🔷 Moderate-strong / ⚠️ Partial / ❌ Lack)
-3. **Comments** (very precise comment on how the user's experiences matches with the job requirement)
-4. **Match Weight** (If the Match Status is Strong, assign number 1; If the Match Status is Moderate-Strong, assign number 0.8; If the Match Status is Partial, assign number 0.5; If the Match Status is Lack, assign number 0.1)
+        resume_summary_prompt = f"""Output a comparison table between the job posting and the uploaded resume in HTML table format.
 
-Do not add any explanation or extra text. The table should be styled to look clean and modern.
+Create an HTML table with Four columns:
+1. Categories (list all the key requirements regarding position responsibilities, technical and soft skills, certifications, and educations from the job requirements)
+2. Match Status (use these exact values: ✅ Strong / 🔷 Moderate-strong / ⚠️ Partial / ❌ Lack)
+3. Comments (precise comment on how the user's experiences match with the job requirement)
+4. Match Weight (Strong=1, Moderate-Strong=0.8, Partial=0.5, Lack=0.1)
 
-Below the table, based on the Match Weight column, calculate the percentage of the matching score using these formulas:
-- Sum of total Match Weight numbers = sum of all numbers in the Match Weight column
-- Count of total Match Weight numbers = count of all numbers in the Match Weight column
-- Match Score (%) = (Sum of total Match Weight numbers) / (Count of total Match Weight numbers) * 100
+Return the output as an HTML table with proper styling. Use this exact HTML structure:
 
-Return the final calculation results of Sum of total Match Weight numbers, Count of total Match Weight numbers, and Match Score as the final percentage number, rounded to two decimal places.
+<table style="width:100%; border-collapse: collapse; margin: 20px 0;">
+  <thead>
+    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+      <th style="padding: 12px; text-align: left; font-weight: 600;">Categories (Job Requirements)</th>
+      <th style="padding: 12px; text-align: center; font-weight: 600;">Match Status</th>
+      <th style="padding: 12px; text-align: left; font-weight: 600;">Comments</th>
+      <th style="padding: 12px; text-align: center; font-weight: 600;">Match Weight</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom: 1px solid #dee2e6;">
+      <td style="padding: 10px;">Requirement 1</td>
+      <td style="padding: 10px; text-align: center;">✅ Strong</td>
+      <td style="padding: 10px;">Comment here</td>
+      <td style="padding: 10px; text-align: center;">1</td>
+    </tr>
+    <!-- More rows... -->
+  </tbody>
+</table>
 
-At the VERY END of your response, output ONLY the match score number on its own line, like this:
-MATCH_SCORE: 75.5
+After the table, add a summary section:
+<div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
+  <p><strong>Sum of total Match Weight numbers:</strong> X.X</p>
+  <p><strong>Count of total Match Weight numbers:</strong> X</p>
+  <p><strong>Match Score:</strong> XX.XX%</p>
+</div>
+
+At the VERY END of your response, on its own line, output:
+MATCH_SCORE: XX.XX
+
+Do NOT use markdown table format (no | symbols). Only use HTML tags.
 
 Here is the resume content:
 {resume_text}
