@@ -1,7 +1,7 @@
 # services/embedding_service.py
 """
 Embedding Service for SmartSuccess.AI
-Generates text embeddings using OpenAI's text-embedding-3-small model
+Generates text embeddings using OpenAI-compatible APIs (OpenAI or xAI)
 """
 
 import os
@@ -11,14 +11,30 @@ import openai
 
 
 class EmbeddingService:
-    """Generate embeddings for text using OpenAI API"""
+    """Generate embeddings for text using OpenAI or xAI API"""
     
     def __init__(self):
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable not set")
-        self.client = openai.OpenAI(api_key=api_key)
-        self.model = "text-embedding-3-small"
+        # Try xAI first, then fall back to OpenAI
+        xai_key = os.getenv("XAI_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+        
+        if xai_key:
+            # Use xAI (Grok) API - OpenAI compatible
+            self.client = openai.OpenAI(
+                api_key=xai_key,
+                base_url="https://api.x.ai/v1"
+            )
+            self.model = "text-embedding-3-small"  # xAI supports OpenAI-compatible models
+            self.provider = "xAI"
+            print("EmbeddingService initialized with xAI API")
+        elif openai_key:
+            # Fall back to OpenAI
+            self.client = openai.OpenAI(api_key=openai_key)
+            self.model = "text-embedding-3-small"
+            self.provider = "OpenAI"
+            print("EmbeddingService initialized with OpenAI API")
+        else:
+            raise ValueError("Neither XAI_API_KEY nor OPENAI_API_KEY environment variable is set")
     
     async def embed_text(self, text: str) -> List[float]:
         """Generate embedding for a single text string"""
@@ -29,7 +45,7 @@ class EmbeddingService:
             )
             return response.data[0].embedding
         except Exception as e:
-            print(f"Embedding error: {e}")
+            print(f"Embedding error ({self.provider}): {e}")
             raise
     
     async def embed_batch(self, texts: List[str]) -> List[List[float]]:
@@ -43,7 +59,7 @@ class EmbeddingService:
             )
             return [item.embedding for item in response.data]
         except Exception as e:
-            print(f"Batch embedding error: {e}")
+            print(f"Batch embedding error ({self.provider}): {e}")
             raise
     
     def chunk_text(self, text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]:
@@ -77,4 +93,3 @@ class EmbeddingService:
             else:
                 final_chunks.append(chunk)
         return final_chunks
-
