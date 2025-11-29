@@ -550,24 +550,9 @@ Here is the job posting:
         # ============================================
         # PART 4: Tailored Work Experience
         # ============================================
-        tailored_work_experience_prompt = f"""Find the latest work experiences from the resume and highlight the ones which are better matched the job requirements. Please refine these best fit work experiences and provide the revised work experience content.
+        tailored_work_experience_prompt = f"""Find the latest work experiences from the resume and highlight the ones which are better matched the job requirements. Please refine these best fit work experiences and provide the revised work experience content. Organize the output into a clean bullet list. Focus on the most recent and relevant experiences that align with the job requirements. Keep each bullet point concise and impactful. Make sure there are line breaks between each paragraph. Ensure the output uses proper bullet list formatting. Maintain 1.2 line spacing.
 
-IMPORTANT OUTPUT RULES:
-- Return the output as clean HTML using <ul>, <li>, <strong>, and <br/> tags
-- Do NOT include markdown code blocks like ```html or ```
-- Do NOT include empty bullet points or empty <li> tags
-- For empty lines or line breaks between sections, use <br/> tag OUTSIDE of <li> tags, NOT empty bullet points
-- Each work experience should be in this format:
-  <ul>
-  <li><strong>Company Name - Job Title (Date Range)</strong></li>
-  <li>Achievement or responsibility 1</li>
-  <li>Achievement or responsibility 2</li>
-  </ul>
-  <br/>
-- Focus on the most recent and relevant experiences that align with the job requirements
-- Keep each bullet point concise and impactful
-- Ensure the modified contents reflect the truths, no grammar errors
-- Keep the original words and language styles as much as possible
+To modify the working experiences from user's resume, better group and combine it, highlight the key accomplishments and achievements, and make it more fit for the job requirements. Ensure the modified contents reflect the truths, no grammar errors, but please keep the original words and language styles as much as possible.
 
 Here is the resume content:
 {resume_text}
@@ -575,35 +560,22 @@ Here is the resume content:
 Here is the job posting:
 {job_text}
 """
-        tailored_work_experience_html = await call_ai_api(tailored_work_experience_prompt)
+        tailored_work_experience_text = await call_ai_api(tailored_work_experience_prompt)
         
-        # Clean up any markdown code blocks from the output
-        tailored_work_experience_html = tailored_work_experience_html.strip()
-        if tailored_work_experience_html.startswith("```"):
-            parts = tailored_work_experience_html.split("```")
-            if len(parts) >= 2:
-                tailored_work_experience_html = parts[1]
-                if tailored_work_experience_html.startswith("html"):
-                    tailored_work_experience_html = tailored_work_experience_html[4:]
-            tailored_work_experience_html = tailored_work_experience_html.strip()
-        
-        # Remove empty <li> tags
-        tailored_work_experience_html = re.sub(r'<li>\s*</li>', '', tailored_work_experience_html)
-        # Remove bullet points that only contain whitespace or <br>
-        tailored_work_experience_html = re.sub(r'<li>\s*<br/?>\s*</li>', '', tailored_work_experience_html)
-        
-        # Process output to list - keep HTML formatting
+        # Process output to list - split by newlines and filter empty lines
         tailored_work_experience = []
-        soup = BeautifulSoup(tailored_work_experience_html, "html.parser")
-        for li in soup.find_all("li"):
-            li_text = li.get_text(strip=True)
-            # Only add non-empty list items
-            if li_text:
-                tailored_work_experience.append(str(li))
-        
-        # If no <li> tags found, return the cleaned HTML as single item
-        if not tailored_work_experience:
-            tailored_work_experience = [tailored_work_experience_html]
+        for line in tailored_work_experience_text.split('\n'):
+            line = line.strip()
+            # Remove bullet point markers if present
+            if line.startswith('- '):
+                line = line[2:]
+            elif line.startswith('• '):
+                line = line[2:]
+            elif line.startswith('* '):
+                line = line[2:]
+            # Only add non-empty lines
+            if line:
+                tailored_work_experience.append(line)
 
         # ============================================
         # PART 5: Cover Letter

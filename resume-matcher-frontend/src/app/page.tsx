@@ -8,7 +8,7 @@
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import SimpleVisitorCounter from './components/SimpleVisitorCounter';
-import ReactMarkdown from 'react-markdown';
+// ReactMarkdown removed - using dangerouslySetInnerHTML for HTML content
 
 interface ComparisonResponse {
   job_summary: string;
@@ -255,7 +255,10 @@ export default function Home() {
                   <div className="w-1.5 h-7 bg-blue-500 rounded mr-3"></div>
                   <span className="text-lg font-semibold text-gray-800">Job Requirement Summary</span>
                 </div>
-                <p className="text-gray-700 text-base ml-5">{response.job_summary || 'No job summary available.'}</p>
+                <div 
+                  className="text-gray-700 text-base ml-5 job-summary-content"
+                  dangerouslySetInnerHTML={{ __html: response.job_summary || 'No job summary available.' }}
+                />
               </div>
 
               {/* Resume - Job Posting Comparison */}
@@ -264,9 +267,10 @@ export default function Home() {
                   <div className="w-1.5 h-7 bg-purple-500 rounded mr-3"></div>
                   <span className="text-lg font-semibold text-gray-800">Resume - Job Posting Comparison</span>
                 </div>
-                <div className="ml-5">
-                  <ReactMarkdown>{response.resume_summary}</ReactMarkdown>
-                </div>
+                <div 
+                  className="ml-5 comparison-table-content"
+                  dangerouslySetInnerHTML={{ __html: response.resume_summary || 'No comparison available.' }}
+                />
               </div>
 
               {/* Match Score */}
@@ -301,10 +305,10 @@ export default function Home() {
                   <div className="w-1.5 h-7 bg-orange-500 rounded mr-3"></div>
                   <span className="text-lg font-semibold text-gray-800">Tailored Resume Work Experience</span>
                 </div>
-                <ul className="list-disc list-inside text-gray-700 text-base ml-5 space-y-1">
+                <ul className="list-disc list-inside text-gray-700 text-base ml-5 space-y-2">
                   {response.tailored_work_experience && response.tailored_work_experience.length > 0 ? (
                     response.tailored_work_experience.map((item: string, index: number) => (
-                      <li key={index} dangerouslySetInnerHTML={{ __html: item }}></li>
+                      <li key={index}>{item}</li>
                     ))
                   ) : (
                     <li>No tailored work experience provided.</li>
