@@ -18,7 +18,7 @@ export default function SimpleVisitorCounter({ className = '' }: SimpleVisitorCo
         // Check if this session has already been counted
         const sessionCounted = sessionStorage.getItem('visitor_counted');
         
-        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://resume-matcher-backend-rrrw.onrender.com';
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://smartsuccess-ai.onrender.com';
         
         if (!sessionCounted) {
           // First visit in this session - increment count

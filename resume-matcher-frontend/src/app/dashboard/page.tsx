@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const [sessions] = useState<SessionHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://smartsuccess-ai.onrender.com";
 
   useEffect(() => {
     fetchAnalytics();
