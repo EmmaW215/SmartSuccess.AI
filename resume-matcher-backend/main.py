@@ -10,6 +10,7 @@ import io
 import aiohttp
 import json
 import os
+import re
 import openai
 import uuid
 from pathlib import Path
@@ -514,7 +515,16 @@ Here is the job posting summary:
         # ============================================
         # PART 3: Tailored Resume Summary
         # ============================================
-        tailored_resume_summary_prompt = f"""Provide a revised one-paragraph summary based on the user resume and the job posting. Make sure this summary highlights the user's key skills and work experiences which more closely matched with the job requirements in job posting. Please limit the overall summary within 1800 characters. The output should be in html format and should maintain a simple, modern style. Maintain 1.2 line spacing. Follow resume format to have no First-person pronouns being used.
+        tailored_resume_summary_prompt = f"""Provide a revised one-paragraph summary based on the user resume and the job posting. Make sure this summary highlights the user's key skills and work experiences which more closely matched with the job requirements in job posting. Please limit the overall summary within 1800 characters.
+
+IMPORTANT OUTPUT RULES:
+- Output ONLY the plain text summary content
+- Do NOT include any HTML tags like <p>, <div>, <html>, etc.
+- Do NOT include markdown code blocks like ```html or ```
+- Do NOT include any wrapper tags or formatting symbols
+- Just output the pure summary text directly
+- Maintain 1.2 line spacing between sentences
+- Follow resume format: no first-person pronouns (I, my, me)
 
 Here is the resume content:
 {resume_text}
@@ -523,15 +533,41 @@ Here is the job posting:
 {job_text}
 """
         tailored_resume_summary = await call_ai_api(tailored_resume_summary_prompt)
+        
+        # Clean up any unwanted tags or symbols from the output
+        tailored_resume_summary = tailored_resume_summary.strip()
+        # Remove markdown code blocks if present
+        if tailored_resume_summary.startswith("```"):
+            tailored_resume_summary = tailored_resume_summary.split("```")[1]
+            if tailored_resume_summary.startswith("html"):
+                tailored_resume_summary = tailored_resume_summary[4:]
+            tailored_resume_summary = tailored_resume_summary.strip()
+        # Remove HTML tags if present
+        tailored_resume_summary = re.sub(r'^<[^>]+>', '', tailored_resume_summary)
+        tailored_resume_summary = re.sub(r'<[^>]+>$', '', tailored_resume_summary)
+        tailored_resume_summary = tailored_resume_summary.strip()
 
         # ============================================
         # PART 4: Tailored Work Experience
         # ============================================
-        tailored_work_experience_prompt = f"""Find the latest work experiences from the resume and highlight the ones which are better matched the job requirements. Please refine these best fit work experiences and provide the revised work experience content. Organize the output into a clean bullet list using the structure above. Focus on the most recent and relevant experiences that align with the job requirements. Keep each bullet point concise and impactful. Make sure there are line breaks between each paragraph. Ensure the output uses proper bullet list formatting. Maintain 1.2 line spacing.
+        tailored_work_experience_prompt = f"""Find the latest work experiences from the resume and highlight the ones which are better matched the job requirements. Please refine these best fit work experiences and provide the revised work experience content.
 
-To modify the working experiences from user's resume, better group and combine it, highlight the key accomplishments and achievements, and make it more fit for the job requirements. Ensure the modified contents reflect the truths, no grammar errors, but please keep the original words and language styles as much as possible.
-
-Return the output as HTML with proper <ul>, <li>, <strong>, and <br/> tags for formatting.
+IMPORTANT OUTPUT RULES:
+- Return the output as clean HTML using <ul>, <li>, <strong>, and <br/> tags
+- Do NOT include markdown code blocks like ```html or ```
+- Do NOT include empty bullet points or empty <li> tags
+- For empty lines or line breaks between sections, use <br/> tag OUTSIDE of <li> tags, NOT empty bullet points
+- Each work experience should be in this format:
+  <ul>
+  <li><strong>Company Name - Job Title (Date Range)</strong></li>
+  <li>Achievement or responsibility 1</li>
+  <li>Achievement or responsibility 2</li>
+  </ul>
+  <br/>
+- Focus on the most recent and relevant experiences that align with the job requirements
+- Keep each bullet point concise and impactful
+- Ensure the modified contents reflect the truths, no grammar errors
+- Keep the original words and language styles as much as possible
 
 Here is the resume content:
 {resume_text}
@@ -541,14 +577,31 @@ Here is the job posting:
 """
         tailored_work_experience_html = await call_ai_api(tailored_work_experience_prompt)
         
+        # Clean up any markdown code blocks from the output
+        tailored_work_experience_html = tailored_work_experience_html.strip()
+        if tailored_work_experience_html.startswith("```"):
+            parts = tailored_work_experience_html.split("```")
+            if len(parts) >= 2:
+                tailored_work_experience_html = parts[1]
+                if tailored_work_experience_html.startswith("html"):
+                    tailored_work_experience_html = tailored_work_experience_html[4:]
+            tailored_work_experience_html = tailored_work_experience_html.strip()
+        
+        # Remove empty <li> tags
+        tailored_work_experience_html = re.sub(r'<li>\s*</li>', '', tailored_work_experience_html)
+        # Remove bullet points that only contain whitespace or <br>
+        tailored_work_experience_html = re.sub(r'<li>\s*<br/?>\s*</li>', '', tailored_work_experience_html)
+        
         # Process output to list - keep HTML formatting
         tailored_work_experience = []
         soup = BeautifulSoup(tailored_work_experience_html, "html.parser")
         for li in soup.find_all("li"):
-            # Keep HTML content
-            tailored_work_experience.append(str(li))
+            li_text = li.get_text(strip=True)
+            # Only add non-empty list items
+            if li_text:
+                tailored_work_experience.append(str(li))
         
-        # If no <li> tags found, split by newlines or return as single item
+        # If no <li> tags found, return the cleaned HTML as single item
         if not tailored_work_experience:
             tailored_work_experience = [tailored_work_experience_html]
 
