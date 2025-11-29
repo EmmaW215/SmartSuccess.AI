@@ -100,8 +100,15 @@ export default function InterviewPage() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sessionIdRef = useRef<string | null>(null); // Keep latest sessionId for speech recognition callback
+  const pendingTranscriptRef = useRef<string>(""); // Store transcript to send
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://smartsuccess-ai.onrender.com";
+
+  // Keep sessionIdRef in sync with sessionId state
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
 
   // ============ SPEECH RECOGNITION SETUP ============
   useEffect(() => {
@@ -125,19 +132,38 @@ export default function InterviewPage() {
             }
           }
 
+          // Update display transcript
           setTranscript(finalTranscript || interimTranscript);
 
+          // When we get a final transcript, store it for sending
           if (finalTranscript) {
-            handleSendMessage(finalTranscript);
-            setTranscript("");
+            console.log("Final transcript captured:", finalTranscript);
+            pendingTranscriptRef.current = finalTranscript;
           }
         };
 
-        recognitionRef.current.onerror = () => setIsListening(false);
+        recognitionRef.current.onerror = (event) => {
+          console.error("Speech recognition error:", event);
+          setIsListening(false);
+        };
+
+        // When recognition ends (user stops speaking), send the message
+        recognitionRef.current.onend = () => {
+          console.log("Speech recognition ended");
+          if (pendingTranscriptRef.current && sessionIdRef.current) {
+            const textToSend = pendingTranscriptRef.current;
+            pendingTranscriptRef.current = ""; // Clear pending
+            setTranscript("");
+            // Use setTimeout to ensure state is updated
+            setTimeout(() => {
+              sendMessageToBackend(textToSend);
+            }, 100);
+          }
+          setIsListening(false);
+        };
       }
       synthRef.current = window.speechSynthesis;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-scroll
@@ -172,8 +198,15 @@ export default function InterviewPage() {
     setIsLoading(false);
   };
 
-  const handleSendMessage = async (text: string) => {
-    if (!sessionId || !text.trim()) return;
+  // Function to send message to backend - uses refs for speech recognition callback
+  const sendMessageToBackend = async (text: string) => {
+    const currentSessionId = sessionIdRef.current;
+    if (!currentSessionId || !text.trim()) {
+      console.log("Cannot send: sessionId=", currentSessionId, "text=", text);
+      return;
+    }
+
+    console.log("Sending message to backend:", text);
 
     const userMsg: Message = {
       role: "user",
@@ -185,7 +218,7 @@ export default function InterviewPage() {
 
     try {
       const formData = new FormData();
-      formData.append("session_id", sessionId);
+      formData.append("session_id", currentSessionId);
       formData.append("message", text);
 
       const res = await fetch(`${BACKEND_URL}/api/interview/message`, {
@@ -193,6 +226,8 @@ export default function InterviewPage() {
         body: formData,
       });
       const data = await res.json();
+
+      console.log("Backend response:", data);
 
       const assistantMsg: Message = {
         role: "assistant",
@@ -210,6 +245,12 @@ export default function InterviewPage() {
       console.error("Message failed:", error);
     }
     setIsLoading(false);
+  };
+
+  // Wrapper for form submission (uses state)
+  const handleSendMessage = async (text: string) => {
+    if (!sessionId || !text.trim()) return;
+    await sendMessageToBackend(text);
   };
 
   const speak = (text: string) => {
