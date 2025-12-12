@@ -2,7 +2,7 @@
 
 ## 🚀 Project Overview
 
-SmartSuccess.AI is an intelligent resume comparison platform that uses AI to analyze job postings and optimize resumes for specific positions. The platform provides comprehensive job application assistance including resume analysis, cover letter generation, and matching scores.
+SmartSuccess.AI is an intelligent resume comparison platform that uses AI to analyze job postings and optimize resumes for specific positions. The platform also provides mock interview preparation for better practices.
 
 ## ✨ Features
 
