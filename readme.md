@@ -1,4 +1,6 @@
-# SmartSuccess.AI - AI-Powered Resume Matching Platform
+# SmartSuccess.AI
+
+> Last updated: 2025-01-12 - AI-Powered Resume Matching Platform
 
 ## 🚀 Project Overview
 
