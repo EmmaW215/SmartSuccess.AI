@@ -1,7 +1,6 @@
 {
-  "buildCommand": "cd resume-matcher-frontend && npm install && npm run build",
-  "outputDirectory": "resume-matcher-frontend/.next",
-  "installCommand": "cd resume-matcher-frontend && npm install",
-  "framework": "nextjs",
-  "rootDirectory": "resume-matcher-frontend"
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "framework": "nextjs"
 }
