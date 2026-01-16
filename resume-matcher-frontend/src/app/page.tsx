@@ -234,7 +234,7 @@ export default function Home() {
               onClick={() => showMatchwiseLogin('Please sign in to access SmartSuccess.AI features')}
               className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
             >
-              Sign in to MatchWise
+              Guest User Sign In
             </button>
           )}
           <div className="mt-4 text-xs text-gray-400 text-center">
