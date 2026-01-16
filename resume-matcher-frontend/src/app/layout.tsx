@@ -1,8 +1,7 @@
-import { Inter, Roboto_Mono } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], weight: ['400', '700'] });
-const robotoMono = Roboto_Mono({ subsets: ['latin'], weight: ['400'] });
 
 export const metadata = {
   title: 'SmartSuccess.AI - AI-Powered Career Success Platform',
@@ -16,9 +15,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.className}>
+    <html lang="en" className={inter.className} suppressHydrationWarning={true}>
       <body>
-        <main className={robotoMono.className}>{children}</main>
+        <main className={inter.className}>{children}</main>
       </body>
     </html>
   );
