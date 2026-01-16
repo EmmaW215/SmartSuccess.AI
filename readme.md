@@ -94,7 +94,7 @@ uvicorn main:app --reload
 
 #### Frontend (.env.local)
 ```env
-NEXT_PUBLIC_API_URL=https://your-backend-url.onrender.com
+NEXT_PUBLIC_BACKEND_URL=https://smartsuccess-ai.onrender.com
 ```
 
 #### Backend (Render Environment Variables)

@@ -77,7 +77,7 @@ export default function Home() {
     setResponse(null);
 
     try {
-      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://resume-matcher-backend-rrrw.onrender.com';
+      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://smartsuccess-ai.onrender.com';
       const response = await fetch(`${BACKEND_URL}/api/compare`, {
         method: 'POST',
         body: formData,
