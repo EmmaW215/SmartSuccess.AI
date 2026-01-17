@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 
 // ============ WEB SPEECH API TYPE DECLARATIONS ============
 // These types are needed for TypeScript to recognize the Web Speech API
@@ -52,6 +53,17 @@ declare global {
 }
 
 // ============ TYPE DEFINITIONS ============
+interface UserInfo {
+  displayName?: string;
+  email?: string;
+  photoURL?: string;
+}
+
+interface MatchwiseLoginStatus {
+  isLoggedIn: boolean;
+  userInfo: UserInfo | null;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -95,6 +107,35 @@ export default function InterviewPage() {
   const [feedback, setFeedback] = useState<SessionFeedback | null>(null);
   const [activeTab, setActiveTab] = useState<"coaching" | "analytics">("coaching");
   const [userId] = useState("demo-user"); // Replace with Firebase auth
+  const [matchwiseLoginStatus, setMatchwiseLoginStatus] = useState<MatchwiseLoginStatus | null>(null);
+
+  // 从 localStorage 加载登录状态
+  useEffect(() => {
+    const savedStatus = localStorage.getItem('matchwiseLoginStatus');
+    if (savedStatus) {
+      try {
+        const parsed = JSON.parse(savedStatus);
+        setMatchwiseLoginStatus(parsed);
+      } catch (e) {
+        console.error('Failed to parse saved login status:', e);
+      }
+    }
+
+    // 监听 localStorage 变化（跨标签页同步）
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'matchwiseLoginStatus') {
+        try {
+          const parsed = e.newValue ? JSON.parse(e.newValue) : null;
+          setMatchwiseLoginStatus(parsed);
+        } catch (e) {
+          console.error('Failed to parse login status from storage event:', e);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Refs
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -332,44 +373,82 @@ export default function InterviewPage() {
   // ============ RENDER ============
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* ====== SIDEBAR ====== */}
-      <aside className="w-56 bg-white border-r flex flex-col">
+      {/* ====== LEFT SIDEBAR ====== */}
+      <aside className="fixed left-0 top-0 h-full w-64 bg-white/95 backdrop-blur-sm shadow-lg z-30 flex flex-col">
         <div className="p-4 border-b">
-          <h1 className="text-xl font-bold text-blue-600">SmartSuccess.AI</h1>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+            SmartSuccess.AI
+          </h1>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
-          {[
-            { icon: "🏠", label: "Home", href: "/" },
-            { icon: "🛠️", label: "Builder", href: "#" },
-            { icon: "📊", label: "Dashboard", href: "/dashboard" },
-            { icon: "📹", label: "My Recordings", href: "#" },
-            { icon: "📚", label: "My Learning", href: "#" },
-          ].map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100"
-            >
-              <span>{item.icon}</span>
-              <span className="text-sm text-gray-700">{item.label}</span>
-            </a>
-          ))}
+        <nav className="flex-1 p-4">
+          <ul className="space-y-2">
+            <li>
+              <Link
+                href="/"
+                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                <span className="mr-3">🏠</span>
+                Home
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/interview"
+                className="flex items-center px-4 py-3 text-gray-700 bg-blue-50 rounded-lg font-medium"
+              >
+                <span className="mr-3">🎤</span>
+                Mock Interview
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/dashboard"
+                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                <span className="mr-3">📊</span>
+                My Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/admin/visitor-stats"
+                className="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                <span className="mr-3">📹</span>
+                My Recordings
+              </Link>
+            </li>
+          </ul>
         </nav>
-        <div className="p-4 border-t">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">
-              U
+
+        {/* User Info / Login Button */}
+        <div className="p-4 border-t border-gray-200">
+          {matchwiseLoginStatus?.isLoggedIn ? (
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <span className="text-gray-500">👤</span>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-gray-600">{matchwiseLoginStatus.userInfo?.displayName || 'User'}</p>
+                <p className="text-xs text-gray-400">{matchwiseLoginStatus.userInfo?.email || ''}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium">User</p>
-              <p className="text-xs text-gray-500">user@email.com</p>
-            </div>
+          ) : (
+            <Link
+              href="/?login=true"
+              className="block w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm text-center"
+            >
+              Guest User Sign In
+            </Link>
+          )}
+          <div className="mt-4 text-xs text-gray-400 text-center">
+            powered by <span className="font-semibold text-blue-600">SmartSuccess.AI</span>
           </div>
         </div>
       </aside>
 
       {/* ====== MAIN CONTENT ====== */}
-      <main className="flex-1 flex">
+      <main className="flex-1 ml-64 flex">
         {/* ====== CHAT PANEL ====== */}
         <div className="flex-1 flex flex-col">
           {/* Header */}

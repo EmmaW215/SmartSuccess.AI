@@ -33,6 +33,19 @@ export default function Home() {
   // MatchWise AI 的 URL
   const MATCHWISE_URL = 'https://matchwise-ai.vercel.app';
 
+  // 从 localStorage 加载登录状态（用于页面刷新时恢复状态）
+  useEffect(() => {
+    const savedStatus = localStorage.getItem('matchwiseLoginStatus');
+    if (savedStatus) {
+      try {
+        const parsed = JSON.parse(savedStatus);
+        setMatchwiseLoginStatus(parsed);
+      } catch (e) {
+        console.error('Failed to parse saved login status:', e);
+      }
+    }
+  }, []);
+
   // 监听来自 MatchWise AI iframe 的消息
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -52,10 +65,13 @@ export default function Home() {
 
       // 处理登录状态更新
       if (event.data.type === 'loginStatus') {
-        setMatchwiseLoginStatus({
+        const status = {
           isLoggedIn: event.data.isLoggedIn,
           userInfo: event.data.userInfo,
-        });
+        };
+        setMatchwiseLoginStatus(status);
+        // 同步到 localStorage
+        localStorage.setItem('matchwiseLoginStatus', JSON.stringify(status));
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ Login status updated:', event.data.isLoggedIn ? 'Logged in' : 'Guest');
         }
@@ -63,19 +79,25 @@ export default function Home() {
 
       // 处理登录成功通知
       if (event.data.type === 'loginSuccess') {
-        setMatchwiseLoginStatus({
+        const status = {
           isLoggedIn: true,
           userInfo: event.data.userInfo,
-        });
+        };
+        setMatchwiseLoginStatus(status);
+        // 同步到 localStorage
+        localStorage.setItem('matchwiseLoginStatus', JSON.stringify(status));
         console.log('✅ User logged in to MatchWise:', event.data.userInfo);
       }
 
       // 处理登出通知
       if (event.data.type === 'logout') {
-        setMatchwiseLoginStatus({
+        const status = {
           isLoggedIn: false,
           userInfo: null,
-        });
+        };
+        setMatchwiseLoginStatus(status);
+        // 同步到 localStorage
+        localStorage.setItem('matchwiseLoginStatus', JSON.stringify(status));
         if (process.env.NODE_ENV === 'development') {
           console.log('👋 User logged out from MatchWise');
         }
@@ -124,6 +146,21 @@ export default function Home() {
       }
     }
   };
+
+  // 检查 URL 参数，如果是从其他页面跳转来登录，自动触发登录
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('login') === 'true' && iframeLoaded && iframeRef.current?.contentWindow) {
+        // 延迟一下确保 iframe 完全加载
+        setTimeout(() => {
+          showMatchwiseLogin('Please sign in to access SmartSuccess.AI features');
+          // 清理 URL 参数
+          window.history.replaceState({}, '', window.location.pathname);
+        }, 1000);
+      }
+    }
+  }, [iframeLoaded]);
 
   // iframe 加载完成后初始化
   useEffect(() => {
