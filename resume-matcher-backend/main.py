@@ -241,6 +241,7 @@ async def can_generate(uid: str = Query(...)):
 allowed_origins = [
     "https://matchwise-ai.vercel.app",
     "https://smartsuccess-ai.vercel.app",
+    "https://smart-success-ai.vercel.app",  # Actual Vercel deployment domain
     "http://localhost:3000",  # For local development
     "http://localhost:3001",  # Alternative local port
     "http://127.0.0.1:3000",

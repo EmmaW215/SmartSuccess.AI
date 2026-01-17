@@ -108,6 +108,7 @@ export default function InterviewPage() {
   const [activeTab, setActiveTab] = useState<"coaching" | "analytics">("coaching");
   const [userId] = useState("demo-user"); // Replace with Firebase auth
   const [matchwiseLoginStatus, setMatchwiseLoginStatus] = useState<MatchwiseLoginStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // 从 localStorage 加载登录状态
   useEffect(() => {
@@ -215,17 +216,55 @@ export default function InterviewPage() {
   // ============ INTERVIEW FUNCTIONS ============
   const startInterview = async () => {
     setIsLoading(true);
+    setError(null); // Clear previous errors
+    
     try {
       const formData = new FormData();
       formData.append("user_id", userId);
+
+      console.log("🚀 Starting interview...", { BACKEND_URL, userId });
 
       const res = await fetch(`${BACKEND_URL}/api/interview/start`, {
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
 
+      console.log("📡 Response status:", res.status, res.statusText);
+
+      // Check if response is ok
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}: ${res.statusText}` }));
+        const errorMessage = errorData.error || `Failed to start interview: ${res.status} ${res.statusText}`;
+        console.error("❌ API Error:", errorMessage);
+        setError(errorMessage);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("✅ Interview started successfully:", data);
+
+      // Check if response contains error (even with 200 status)
+      if (data.error) {
+        console.error("❌ Backend error:", data.error);
+        setError(data.error);
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate required fields
+      if (!data.session_id || !data.message) {
+        const errorMsg = "Invalid response from server: missing session_id or message";
+        console.error("❌", errorMsg, data);
+        setError(errorMsg);
+        setIsLoading(false);
+        return;
+      }
+
+      // Success - update state
       setSessionId(data.session_id);
+      sessionIdRef.current = data.session_id; // Sync ref
+      
       const welcomeMsg: Message = {
         role: "assistant",
         content: data.message,
@@ -234,9 +273,12 @@ export default function InterviewPage() {
       setMessages([welcomeMsg]);
       speak(data.message);
     } catch (error) {
-      console.error("Failed to start:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to start interview. Please check your connection and try again.";
+      console.error("❌ Failed to start:", error);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   // Function to send message to backend - uses refs for speech recognition callback
@@ -476,13 +518,45 @@ export default function InterviewPage() {
                 <p className="text-gray-500 mb-6 text-center max-w-md">
                   Practice answering interview questions with AI feedback based on the STAR method.
                 </p>
+                {error && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md w-full">
+                    <div className="flex items-start">
+                      <span className="text-red-600 mr-2">⚠️</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-red-800">Error</p>
+                        <p className="text-sm text-red-700 mt-1">{error}</p>
+                        <button
+                          onClick={() => {
+                            setError(null);
+                            startInterview();
+                          }}
+                          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={startInterview}
                   disabled={isLoading}
-                  className="px-8 py-4 bg-blue-600 text-white rounded-xl text-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+                  className="px-8 py-4 bg-blue-600 text-white rounded-xl text-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
-                  {isLoading ? "Starting..." : "Start Interview"}
+                  {isLoading ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin mr-2">⏳</span>
+                      Starting...
+                    </span>
+                  ) : (
+                    "Start Interview"
+                  )}
                 </button>
+                {process.env.NODE_ENV === 'development' && (
+                  <p className="mt-4 text-xs text-gray-400">
+                    Backend: {BACKEND_URL}
+                  </p>
+                )}
               </div>
             ) : (
               messages.map((msg, i) => (
