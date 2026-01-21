@@ -181,8 +181,8 @@ export async function routedFetch(
 ): Promise<Response> {
   const {
     preferGPU = true,
-    fallbackToRender = true,
-    retries = 1
+    fallbackToRender = true
+    // retries reserved for future retry logic implementation
   } = config;
   
   // Get appropriate backend

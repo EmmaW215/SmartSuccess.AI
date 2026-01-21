@@ -4,7 +4,7 @@
  * Falls back to Web Speech API when GPU is unavailable
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useGPUBackend } from './useGPUBackend';
 
 interface VoiceConfig {
@@ -75,7 +75,8 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}): UseVo
     onError
   } = options;
 
-  const voiceConfig = { ...DEFAULT_VOICE_CONFIG, ...userVoiceConfig };
+  // Memoize voiceConfig to prevent unnecessary re-renders
+  const voiceConfig = useMemo(() => ({ ...DEFAULT_VOICE_CONFIG, ...userVoiceConfig }), [userVoiceConfig]);
 
   // GPU backend hook
   const { gpuAvailable, request: gpuRequest } = useGPUBackend({
@@ -94,9 +95,51 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}): UseVo
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  // audioContextRef reserved for future audio processing features
+  // const audioContextRef = useRef<AudioContext | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
-  const webSpeechRecognitionRef = useRef<any>(null);
+  
+  // Web Speech API types
+  interface SpeechRecognitionEvent {
+    results: SpeechRecognitionResultList;
+    resultIndex: number;
+  }
+  
+  interface SpeechRecognitionResultList {
+    length: number;
+    item(index: number): SpeechRecognitionResult;
+    [index: number]: SpeechRecognitionResult;
+  }
+  
+  interface SpeechRecognitionResult {
+    length: number;
+    item(index: number): SpeechRecognitionAlternative;
+    [index: number]: SpeechRecognitionAlternative;
+    isFinal: boolean;
+  }
+  
+  interface SpeechRecognitionAlternative {
+    transcript: string;
+    confidence: number;
+  }
+  
+  interface SpeechRecognitionErrorEvent extends Event {
+    error: string;
+  }
+  
+  interface SpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    onresult: ((event: SpeechRecognitionEvent) => void) | null;
+    onend: (() => void) | null;
+    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+    start(): void;
+    stop(): void;
+    abort(): void;
+  }
+  
+  const webSpeechRecognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Check voice availability
   useEffect(() => {
@@ -125,9 +168,15 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}): UseVo
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Type-safe access to Web Speech API
+    interface WindowWithSpeechRecognition extends Window {
+      SpeechRecognition?: new () => SpeechRecognition;
+      webkitSpeechRecognition?: new () => SpeechRecognition;
+    }
+    
     const SpeechRecognition = 
-      (window as any).SpeechRecognition || 
-      (window as any).webkitSpeechRecognition;
+      (window as WindowWithSpeechRecognition).SpeechRecognition || 
+      (window as WindowWithSpeechRecognition).webkitSpeechRecognition;
 
     if (SpeechRecognition && !usingGPU) {
       const recognition = new SpeechRecognition();
@@ -135,7 +184,7 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}): UseVo
       recognition.interimResults = true;
       recognition.lang = voiceConfig.language;
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
@@ -148,7 +197,7 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}): UseVo
         }
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         const errorMessage = `Speech recognition error: ${event.error}`;
         setError(errorMessage);
         onError?.(errorMessage);

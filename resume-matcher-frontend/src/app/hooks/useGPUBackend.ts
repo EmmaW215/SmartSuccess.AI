@@ -9,9 +9,7 @@ import {
   getGPUHealthDetails,
   refreshGPUHealth,
   getBackendStatus,
-  routedFetch,
-  GPU_BACKEND_URL,
-  RENDER_BACKEND_URL
+  routedFetch
 } from '../utils/requestRouter';
 
 interface GPUStatus {

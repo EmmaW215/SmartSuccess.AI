@@ -1,7 +1,7 @@
 // resume-matcher-frontend/src/app/interview/page.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 // GPU Enhancement imports
 import { routedFetch } from "../utils/requestRouter";
@@ -216,7 +216,7 @@ export default function InterviewPage() {
       }
       synthRef.current = window.speechSynthesis;
     }
-  }, []);
+  }, [sendMessageToBackend]);
 
   // Auto-scroll
   useEffect(() => {
@@ -296,7 +296,7 @@ export default function InterviewPage() {
   };
 
   // Function to send message to backend - uses refs for speech recognition callback
-  const sendMessageToBackend = async (text: string) => {
+  const sendMessageToBackend = useCallback(async (text: string) => {
     const currentSessionId = sessionIdRef.current;
     if (!currentSessionId || !text.trim()) {
       console.log("Cannot send: sessionId=", currentSessionId, "text=", text);
@@ -448,7 +448,7 @@ export default function InterviewPage() {
       setMessages((prev) => [...prev, errorMsg]);
     }
     setIsLoading(false);
-  };
+  }, []);
 
   // Wrapper for form submission (uses state)
   const handleSendMessage = async (text: string) => {
