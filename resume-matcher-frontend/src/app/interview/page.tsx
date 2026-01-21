@@ -3,6 +3,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+// GPU Enhancement imports
+import { routedFetch } from "../utils/requestRouter";
+import { useGPUBackend } from "../hooks/useGPUBackend";
+import { GPUStatusBadge } from "../components/GPUStatusIndicator";
 
 // ============ WEB SPEECH API TYPE DECLARATIONS ============
 // These types are needed for TypeScript to recognize the Web Speech API
@@ -146,6 +150,12 @@ export default function InterviewPage() {
   const pendingTranscriptRef = useRef<string>(""); // Store transcript to send
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://smartsuccess-ai.onrender.com";
+  
+  // GPU Backend hook (optional - for enhanced features)
+  const { gpuAvailable } = useGPUBackend({
+    autoCheck: true,
+    checkInterval: 30000
+  });
 
   // Keep sessionIdRef in sync with sessionId state
   useEffect(() => {
@@ -222,11 +232,15 @@ export default function InterviewPage() {
       const formData = new FormData();
       formData.append("user_id", userId);
 
-      console.log("🚀 Starting interview...", { BACKEND_URL, userId });
+      console.log("🚀 Starting interview...", { BACKEND_URL, userId, gpuAvailable });
 
-      const res = await fetch(`${BACKEND_URL}/api/interview/start`, {
+      // Use routedFetch for automatic GPU/Render routing
+      const res = await routedFetch("/api/interview/start", {
         method: "POST",
         body: formData,
+      }, {
+        preferGPU: false, // Interview start can use either backend
+        fallbackToRender: true
       });
 
       console.log("📡 Response status:", res.status, res.statusText);
@@ -304,9 +318,13 @@ export default function InterviewPage() {
       formData.append("session_id", currentSessionId);
       formData.append("message", text);
 
-      const res = await fetch(`${BACKEND_URL}/api/interview/message`, {
+      // Use routedFetch for automatic GPU/Render routing
+      const res = await routedFetch("/api/interview/message", {
         method: "POST",
         body: formData,
+      }, {
+        preferGPU: false, // Interview messages can use either backend
+        fallbackToRender: true
       });
 
       // Check if response is ok
@@ -564,7 +582,8 @@ export default function InterviewPage() {
                 {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <GPUStatusBadge className="mr-2" />
               <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">⭐ Not shared</span>
               <button className="px-4 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
                 Share
@@ -616,9 +635,10 @@ export default function InterviewPage() {
                   )}
                 </button>
                 {process.env.NODE_ENV === 'development' && (
-                  <p className="mt-4 text-xs text-gray-400">
-                    Backend: {BACKEND_URL}
-                  </p>
+                  <div className="mt-4 text-xs text-gray-400 space-y-1">
+                    <p>Backend: {BACKEND_URL}</p>
+                    <p>GPU Status: {gpuAvailable ? '✅ Available' : '❌ Unavailable'}</p>
+                  </div>
                 )}
               </div>
             ) : (
