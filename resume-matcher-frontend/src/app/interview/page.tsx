@@ -118,139 +118,7 @@ export default function InterviewPage() {
     sessionIdRef.current = sessionId;
   }, [sessionId]);
 
-  // ============ SPEECH RECOGNITION SETUP ============
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-
-        recognitionRef.current.onresult = (event) => {
-          let interimTranscript = "";
-          let finalTranscript = "";
-
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const t = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += t;
-            } else {
-              interimTranscript += t;
-            }
-          }
-
-          // Update display transcript
-          setTranscript(finalTranscript || interimTranscript);
-
-          // When we get a final transcript, store it for sending
-          if (finalTranscript) {
-            console.log("Final transcript captured:", finalTranscript);
-            pendingTranscriptRef.current = finalTranscript;
-          }
-        };
-
-        recognitionRef.current.onerror = (event) => {
-          console.error("Speech recognition error:", event);
-          setIsListening(false);
-        };
-
-        // When recognition ends (user stops speaking), send the message
-        recognitionRef.current.onend = () => {
-          console.log("Speech recognition ended");
-          if (pendingTranscriptRef.current && sessionIdRef.current) {
-            const textToSend = pendingTranscriptRef.current;
-            pendingTranscriptRef.current = ""; // Clear pending
-            setTranscript("");
-            // Use setTimeout to ensure state is updated
-            setTimeout(() => {
-              sendMessageToBackend(textToSend);
-            }, 100);
-          }
-          setIsListening(false);
-        };
-      }
-      synthRef.current = window.speechSynthesis;
-    }
-  }, [sendMessageToBackend]);
-
-  // Auto-scroll
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // ============ INTERVIEW FUNCTIONS ============
-  const startInterview = async () => {
-    setIsLoading(true);
-    setError(null); // Clear previous errors
-    
-    try {
-      const formData = new FormData();
-      formData.append("user_id", userId);
-
-      console.log("🚀 Starting interview...", { BACKEND_URL, userId, gpuAvailable });
-
-      // Use routedFetch for automatic GPU/Render routing
-      const res = await routedFetch("/api/interview/start", {
-        method: "POST",
-        body: formData,
-      }, {
-        preferGPU: false, // Interview start can use either backend
-        fallbackToRender: true
-      });
-
-      console.log("📡 Response status:", res.status, res.statusText);
-
-      // Check if response is ok
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}: ${res.statusText}` }));
-        const errorMessage = errorData.error || `Failed to start interview: ${res.status} ${res.statusText}`;
-        console.error("❌ API Error:", errorMessage);
-        setError(errorMessage);
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await res.json();
-      console.log("✅ Interview started successfully:", data);
-
-      // Check if response contains error (even with 200 status)
-      if (data.error) {
-        console.error("❌ Backend error:", data.error);
-        setError(data.error);
-        setIsLoading(false);
-        return;
-      }
-
-      // Validate required fields
-      if (!data.session_id || !data.message) {
-        const errorMsg = "Invalid response from server: missing session_id or message";
-        console.error("❌", errorMsg, data);
-        setError(errorMsg);
-        setIsLoading(false);
-        return;
-      }
-
-      // Success - update state
-      setSessionId(data.session_id);
-      sessionIdRef.current = data.session_id; // Sync ref
-      
-      const welcomeMsg: Message = {
-        role: "assistant",
-        content: data.message,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-      setMessages([welcomeMsg]);
-      speak(data.message);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to start interview. Please check your connection and try again.";
-      console.error("❌ Failed to start:", error);
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // ============ SEND MESSAGE FUNCTION (MOVED BEFORE useEffect that depends on it) ============
   // Function to send message to backend - uses refs for speech recognition callback
   const sendMessageToBackend = useCallback(async (text: string) => {
     const currentSessionId = sessionIdRef.current;
@@ -405,6 +273,139 @@ export default function InterviewPage() {
     }
     setIsLoading(false);
   }, []);
+
+  // ============ SPEECH RECOGNITION SETUP ============
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+
+        recognitionRef.current.onresult = (event) => {
+          let interimTranscript = "";
+          let finalTranscript = "";
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const t = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += t;
+            } else {
+              interimTranscript += t;
+            }
+          }
+
+          // Update display transcript
+          setTranscript(finalTranscript || interimTranscript);
+
+          // When we get a final transcript, store it for sending
+          if (finalTranscript) {
+            console.log("Final transcript captured:", finalTranscript);
+            pendingTranscriptRef.current = finalTranscript;
+          }
+        };
+
+        recognitionRef.current.onerror = (event) => {
+          console.error("Speech recognition error:", event);
+          setIsListening(false);
+        };
+
+        // When recognition ends (user stops speaking), send the message
+        recognitionRef.current.onend = () => {
+          console.log("Speech recognition ended");
+          if (pendingTranscriptRef.current && sessionIdRef.current) {
+            const textToSend = pendingTranscriptRef.current;
+            pendingTranscriptRef.current = ""; // Clear pending
+            setTranscript("");
+            // Use setTimeout to ensure state is updated
+            setTimeout(() => {
+              sendMessageToBackend(textToSend);
+            }, 100);
+          }
+          setIsListening(false);
+        };
+      }
+      synthRef.current = window.speechSynthesis;
+    }
+  }, [sendMessageToBackend]);
+
+  // Auto-scroll
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // ============ INTERVIEW FUNCTIONS ============
+  const startInterview = async () => {
+    setIsLoading(true);
+    setError(null); // Clear previous errors
+    
+    try {
+      const formData = new FormData();
+      formData.append("user_id", userId);
+
+      console.log("🚀 Starting interview...", { BACKEND_URL, userId, gpuAvailable });
+
+      // Use routedFetch for automatic GPU/Render routing
+      const res = await routedFetch("/api/interview/start", {
+        method: "POST",
+        body: formData,
+      }, {
+        preferGPU: false, // Interview start can use either backend
+        fallbackToRender: true
+      });
+
+      console.log("📡 Response status:", res.status, res.statusText);
+
+      // Check if response is ok
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}: ${res.statusText}` }));
+        const errorMessage = errorData.error || `Failed to start interview: ${res.status} ${res.statusText}`;
+        console.error("❌ API Error:", errorMessage);
+        setError(errorMessage);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("✅ Interview started successfully:", data);
+
+      // Check if response contains error (even with 200 status)
+      if (data.error) {
+        console.error("❌ Backend error:", data.error);
+        setError(data.error);
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate required fields
+      if (!data.session_id || !data.message) {
+        const errorMsg = "Invalid response from server: missing session_id or message";
+        console.error("❌", errorMsg, data);
+        setError(errorMsg);
+        setIsLoading(false);
+        return;
+      }
+
+      // Success - update state
+      setSessionId(data.session_id);
+      sessionIdRef.current = data.session_id; // Sync ref
+      
+      const welcomeMsg: Message = {
+        role: "assistant",
+        content: data.message,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages([welcomeMsg]);
+      speak(data.message);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to start interview. Please check your connection and try again.";
+      console.error("❌ Failed to start:", error);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Wrapper for form submission (uses state)
   const handleSendMessage = async (text: string) => {
