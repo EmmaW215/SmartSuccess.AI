@@ -308,9 +308,54 @@ export default function InterviewPage() {
         method: "POST",
         body: formData,
       });
+
+      // Check if response is ok
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}: ${res.statusText}` }));
+        const errorMessage = errorData.error || `Failed to send message: ${res.status} ${res.statusText}`;
+        console.error("❌ API Error:", errorMessage);
+        setError(errorMessage);
+        
+        // Show error message to user
+        const errorMsg: Message = {
+          role: "assistant",
+          content: `I apologize, but I encountered an error: ${errorMessage}. Please try again or say "STOP" to return to the menu.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+        setIsLoading(false);
+        return;
+      }
+
       const data = await res.json();
 
       console.log("Backend response:", data);
+
+      // Check if response contains error (even with 200 status)
+      if (data.error) {
+        console.error("❌ Backend error:", data.error);
+        setError(data.error);
+        const errorMsg: Message = {
+          role: "assistant",
+          content: `I apologize, but I encountered an error: ${data.error}. Please try again or say "STOP" to return to the menu.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate required fields
+      if (!data.response) {
+        const errorMsg = "Invalid response from server: missing response field";
+        console.error("❌", errorMsg, data);
+        setError(errorMsg);
+        setIsLoading(false);
+        return;
+      }
+
+      // Clear any previous errors on successful response
+      setError(null);
 
       const assistantMsg: Message = {
         role: "assistant",
@@ -321,37 +366,45 @@ export default function InterviewPage() {
       speak(data.response);
 
       // Update feedback if provided (individual question feedback)
-      if (data.feedback) {
+      // Only process feedback if it exists and has required fields
+      if (data.feedback && typeof data.feedback === 'object') {
         console.log("Question feedback received:", data.feedback);
         // Update with session feedback if available, otherwise create from individual feedback
-        if (data.session_feedback) {
+        if (data.session_feedback && typeof data.session_feedback === 'object') {
           setFeedback(data.session_feedback);
         } else {
           // Create a session feedback structure from individual feedback
+          // Safely access properties with default values
           setFeedback((prevFeedback) => {
+            const strengths = Array.isArray(data.feedback.strengths) ? data.feedback.strengths : [];
+            const growthAreas = Array.isArray(data.feedback.growthAreas) ? data.feedback.growthAreas : [];
+            
             const newQuestionFeedback = {
-              question: data.feedback.question,
-              response: data.feedback.response,
-              activeListening: data.feedback.activeListening,
-              starScore: data.feedback.starScore,
-              strengths: data.feedback.strengths,
-              growthAreas: data.feedback.growthAreas,
+              question: data.feedback.question || "Question",
+              response: data.feedback.response || text,
+              activeListening: data.feedback.activeListening || { score: 0, insight: "No feedback available" },
+              starScore: data.feedback.starScore || { situation: 0, task: 0, action: 0, result: 0, average: 0 },
+              strengths: strengths,
+              growthAreas: growthAreas,
             };
             
             if (prevFeedback) {
+              const prevStrengths = Array.isArray(prevFeedback.aggregatedStrengths) ? prevFeedback.aggregatedStrengths : [];
+              const prevGrowthAreas = Array.isArray(prevFeedback.aggregatedGrowthAreas) ? prevFeedback.aggregatedGrowthAreas : [];
+              
               return {
                 ...prevFeedback,
                 questionsFeedback: [...prevFeedback.questionsFeedback, newQuestionFeedback],
-                aggregatedStrengths: [...new Set([...prevFeedback.aggregatedStrengths, ...data.feedback.strengths])].slice(0, 5),
-                aggregatedGrowthAreas: [...new Set([...prevFeedback.aggregatedGrowthAreas, ...data.feedback.growthAreas])].slice(0, 5),
+                aggregatedStrengths: [...new Set([...prevStrengths, ...strengths])].slice(0, 5),
+                aggregatedGrowthAreas: [...new Set([...prevGrowthAreas, ...growthAreas])].slice(0, 5),
                 overallScore: data.feedback.starScore?.average ? (data.feedback.starScore.average / 5) * 100 : prevFeedback.overallScore,
               };
             } else {
               return {
                 overallScore: data.feedback.starScore?.average ? (data.feedback.starScore.average / 5) * 100 : 0,
                 questionsFeedback: [newQuestionFeedback],
-                aggregatedStrengths: data.feedback.strengths || [],
-                aggregatedGrowthAreas: data.feedback.growthAreas || [],
+                aggregatedStrengths: strengths,
+                aggregatedGrowthAreas: growthAreas,
               };
             }
           });
@@ -359,12 +412,22 @@ export default function InterviewPage() {
       }
       
       // If session feedback is provided separately
-      if (data.session_feedback) {
+      if (data.session_feedback && typeof data.session_feedback === 'object') {
         console.log("Session feedback received:", data.session_feedback);
         setFeedback(data.session_feedback);
       }
     } catch (error) {
-      console.error("Message failed:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to send message. Please check your connection and try again.";
+      console.error("❌ Message failed:", error);
+      setError(errorMessage);
+      
+      // Show error message to user
+      const errorMsg: Message = {
+        role: "assistant",
+        content: `I apologize, but I encountered an error: ${errorMessage}. Please try again or say "STOP" to return to the menu.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
     }
     setIsLoading(false);
   };
