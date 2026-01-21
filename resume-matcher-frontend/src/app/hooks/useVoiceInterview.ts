@@ -10,7 +10,7 @@ import type {
   SpeechRecognition,
   SpeechRecognitionEvent,
   SpeechRecognitionErrorEvent
-} from '../types/speech';
+} from '../../types/speech';
 
 interface VoiceConfig {
   /** Voice preset for TTS */
