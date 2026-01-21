@@ -6,6 +6,11 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useGPUBackend } from './useGPUBackend';
+import type {
+  SpeechRecognition,
+  SpeechRecognitionEvent,
+  SpeechRecognitionErrorEvent
+} from '../types/speech';
 
 interface VoiceConfig {
   /** Voice preset for TTS */
@@ -98,47 +103,7 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}): UseVo
   // audioContextRef reserved for future audio processing features
   // const audioContextRef = useRef<AudioContext | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
-  
-  // Web Speech API types
-  interface SpeechRecognitionEvent {
-    results: SpeechRecognitionResultList;
-    resultIndex: number;
-  }
-  
-  interface SpeechRecognitionResultList {
-    length: number;
-    item(index: number): SpeechRecognitionResult;
-    [index: number]: SpeechRecognitionResult;
-  }
-  
-  interface SpeechRecognitionResult {
-    length: number;
-    item(index: number): SpeechRecognitionAlternative;
-    [index: number]: SpeechRecognitionAlternative;
-    isFinal: boolean;
-  }
-  
-  interface SpeechRecognitionAlternative {
-    transcript: string;
-    confidence: number;
-  }
-  
-  interface SpeechRecognitionErrorEvent extends Event {
-    error: string;
-  }
-  
-  interface SpeechRecognition extends EventTarget {
-    continuous: boolean;
-    interimResults: boolean;
-    lang: string;
-    onresult: ((event: SpeechRecognitionEvent) => void) | null;
-    onend: (() => void) | null;
-    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-    start(): void;
-    stop(): void;
-    abort(): void;
-  }
-  
+
   const webSpeechRecognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Check voice availability
@@ -168,15 +133,10 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}): UseVo
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Type-safe access to Web Speech API
-    interface WindowWithSpeechRecognition extends Window {
-      SpeechRecognition?: new () => SpeechRecognition;
-      webkitSpeechRecognition?: new () => SpeechRecognition;
-    }
-    
-    const SpeechRecognition = 
-      (window as WindowWithSpeechRecognition).SpeechRecognition || 
-      (window as WindowWithSpeechRecognition).webkitSpeechRecognition;
+    // Access Web Speech API from global Window interface
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
 
     if (SpeechRecognition && !usingGPU) {
       const recognition = new SpeechRecognition();
