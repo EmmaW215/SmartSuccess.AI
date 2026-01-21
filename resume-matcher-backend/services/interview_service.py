@@ -84,47 +84,82 @@ class InterviewService:
         if not session:
             return {"error": "Session not found"}
         
-        session.add_message("user", user_message)
-        
-        if "stop" in user_message.lower():
-            session.current_section = InterviewSection.MENU
-            session.question_index = 0
-            response = "Let's take a break.\n\n" + await self.get_menu()
-            session.add_message("assistant", response)
-            return {"response": response, "section": session.current_section.value}
-        
-        response = ""
-        
-        if session.current_section == InterviewSection.GREETING:
-            if self._is_ready(user_message):
-                session.current_section = InterviewSection.MENU
-                response = await self.get_menu()
-            else:
-                response = "Let me know when you're ready!"
-        
-        elif session.current_section == InterviewSection.MENU:
-            section = self._parse_section_choice(user_message)
-            if section:
-                session.current_section = section
-                session.question_index = 0
-                response = await self._get_next_question(session)
-            else:
-                response = "Please say 1, 2, or 3."
-        
-        else:
-            feedback = await self._generate_feedback(session, user_message)
-            session.question_index += 1
+        try:
+            session.add_message("user", user_message)
             
-            if session.question_index >= 5:
+            if "stop" in user_message.lower():
                 session.current_section = InterviewSection.MENU
                 session.question_index = 0
-                response = f"{feedback}\n\nSection complete! " + await self.get_menu()
+                response = "Let's take a break.\n\n" + await self.get_menu()
+                session.add_message("assistant", response)
+                return {"response": response, "section": session.current_section.value}
+            
+            response = ""
+            
+            if session.current_section == InterviewSection.GREETING:
+                if self._is_ready(user_message):
+                    session.current_section = InterviewSection.MENU
+                    response = await self.get_menu()
+                else:
+                    response = "Let me know when you're ready!"
+            
+            elif session.current_section == InterviewSection.MENU:
+                section = self._parse_section_choice(user_message)
+                if section:
+                    session.current_section = section
+                    session.question_index = 0
+                    try:
+                        response = await self._get_next_question(session)
+                    except Exception as e:
+                        print(f"Error getting next question: {e}")
+                        # Fallback to a default question based on section
+                        if section == InterviewSection.TECHNICAL:
+                            response = "What technical skills do you bring to this role?"
+                        elif section == InterviewSection.SOFT_SKILL:
+                            response = "Tell me about a challenging situation you faced and how you handled it."
+                        else:
+                            response = "Please tell me about yourself."
+                else:
+                    response = "Please say 1, 2, or 3."
+            
             else:
-                next_q = await self._get_next_question(session)
-                response = f"{feedback}\n\n---\n\n{next_q}"
-        
-        session.add_message("assistant", response)
-        return {"response": response, "section": session.current_section.value, "question_index": session.question_index}
+                try:
+                    feedback = await self._generate_feedback(session, user_message)
+                    session.question_index += 1
+                    
+                    if session.question_index >= 5:
+                        session.current_section = InterviewSection.MENU
+                        session.question_index = 0
+                        response = f"{feedback}\n\nSection complete! " + await self.get_menu()
+                    else:
+                        try:
+                            next_q = await self._get_next_question(session)
+                            response = f"{feedback}\n\n---\n\n{next_q}"
+                        except Exception as e:
+                            print(f"Error getting next question: {e}")
+                            response = f"{feedback}\n\n---\n\nPlease tell me more about your experience."
+                except Exception as e:
+                    print(f"Error generating feedback: {e}")
+                    session.question_index += 1
+                    if session.question_index >= 5:
+                        session.current_section = InterviewSection.MENU
+                        session.question_index = 0
+                        response = "Thank you for that answer.\n\nSection complete! " + await self.get_menu()
+                    else:
+                        try:
+                            next_q = await self._get_next_question(session)
+                            response = f"Thank you for that answer.\n\n---\n\n{next_q}"
+                        except Exception as e2:
+                            print(f"Error getting next question: {e2}")
+                            response = "Thank you for that answer. Please tell me more about your experience."
+            
+            session.add_message("assistant", response)
+            return {"response": response, "section": session.current_section.value, "question_index": session.question_index}
+        except Exception as e:
+            print(f"Error in process_message: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"error": f"Failed to process message: {str(e)}"}
     
     async def _get_next_question(self, session: InterviewSession) -> str:
         if session.current_section == InterviewSection.SELF_INTRO:
@@ -133,14 +168,56 @@ class InterviewService:
             return "Tell me about your career goals."
         
         elif session.current_section == InterviewSection.TECHNICAL:
-            context = await self.rag_service.get_technical_context(session.user_id)
-            prompt = f"Based on: {context}\n\nGenerate ONE technical interview question. Return ONLY the question."
-            return await self._call_llm(prompt)
+            try:
+                context = await self.rag_service.get_technical_context(session.user_id)
+                # If context is empty (no resume/job data), use default question
+                if not context or context.strip() == "":
+                    # Provide fallback questions if no context available
+                    default_tech_questions = [
+                        "What programming languages are you most comfortable with, and why?",
+                        "Describe a challenging technical problem you've solved recently.",
+                        "How do you approach debugging a complex software issue?",
+                        "What development tools and technologies do you prefer, and why?",
+                        "Tell me about a time you had to learn a new technology quickly."
+                    ]
+                    question_idx = min(session.question_index, len(default_tech_questions) - 1)
+                    return default_tech_questions[question_idx]
+                
+                prompt = f"Based on: {context}\n\nGenerate ONE technical interview question. Return ONLY the question."
+                result = await self._call_llm(prompt)
+                # If LLM returns empty or error, use fallback
+                if not result or result.strip() == "":
+                    return "What technical skills do you bring to this role?"
+                return result
+            except Exception as e:
+                print(f"Error getting technical context: {e}")
+                return "What technical skills do you bring to this role?"
         
         elif session.current_section == InterviewSection.SOFT_SKILL:
-            context = await self.rag_service.get_soft_skills_context(session.user_id)
-            prompt = f"Based on: {context}\n\nGenerate ONE behavioral STAR question. Return ONLY the question."
-            return await self._call_llm(prompt)
+            try:
+                context = await self.rag_service.get_soft_skills_context(session.user_id)
+                # If context is empty (no resume/job data), use default question
+                if not context or context.strip() == "":
+                    # Provide fallback questions if no context available
+                    default_soft_questions = [
+                        "Tell me about a time you worked effectively in a team.",
+                        "Describe a situation where you had to handle a difficult colleague or conflict.",
+                        "Give me an example of a time you demonstrated leadership skills.",
+                        "Tell me about a time you had to adapt quickly to a change in priorities.",
+                        "Describe a situation where you had to communicate a complex idea to a non-technical audience."
+                    ]
+                    question_idx = min(session.question_index, len(default_soft_questions) - 1)
+                    return default_soft_questions[question_idx]
+                
+                prompt = f"Based on: {context}\n\nGenerate ONE behavioral STAR question. Return ONLY the question."
+                result = await self._call_llm(prompt)
+                # If LLM returns empty or error, use fallback
+                if not result or result.strip() == "":
+                    return "Tell me about a challenging situation you faced and how you handled it."
+                return result
+            except Exception as e:
+                print(f"Error getting soft skills context: {e}")
+                return "Tell me about a challenging situation you faced and how you handled it."
         
         return "Tell me more about your experience."
     
