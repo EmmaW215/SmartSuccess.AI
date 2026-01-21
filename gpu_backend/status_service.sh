@@ -1,7 +1,7 @@
 #!/bin/bash
 # Check SmartSuccess.AI GPU Backend Service Status
 
-cd /home/jovyan/smartsuccess-gpu/SmartSuccess.AI/gpu_backend
+cd /home/jovyan/work/smartsuccess-gpu/SmartSuccess.AI/gpu_backend
 
 echo "=========================================="
 echo "Service Status"

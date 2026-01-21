@@ -1,7 +1,7 @@
 #!/bin/bash
 # Stop SmartSuccess.AI GPU Backend Service
 
-cd /home/jovyan/smartsuccess-gpu/SmartSuccess.AI/gpu_backend
+cd /home/jovyan/work/smartsuccess-gpu/SmartSuccess.AI/gpu_backend
 
 if [ -f gpu_backend.pid ]; then
     PID=$(cat gpu_backend.pid)

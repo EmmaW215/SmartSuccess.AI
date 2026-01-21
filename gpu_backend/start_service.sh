@@ -1,7 +1,7 @@
 #!/bin/bash
 # Start SmartSuccess.AI GPU Backend Service (without systemd)
 
-cd /home/jovyan/smartsuccess-gpu/SmartSuccess.AI/gpu_backend
+cd /home/jovyan/work/smartsuccess-gpu/SmartSuccess.AI/gpu_backend
 
 # Check if already running
 if [ -f gpu_backend.pid ]; then
