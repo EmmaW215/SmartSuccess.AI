@@ -3,7 +3,7 @@
 
 set -e
 
-GPU_BACKEND_DIR="/home/jovyan/smartsuccess-gpu/SmartSuccess.AI/gpu_backend"
+GPU_BACKEND_DIR="/home/jovyan/work/smartsuccess-gpu/SmartSuccess.AI/gpu_backend"
 ENV_FILE="$GPU_BACKEND_DIR/.env"
 
 echo "=========================================="
