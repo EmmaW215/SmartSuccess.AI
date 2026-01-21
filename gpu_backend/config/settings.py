@@ -27,9 +27,11 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: List[str] = Field(default=[
         "https://smart-success-ai.vercel.app",
+        "https://smartsuccess-ai.vercel.app",
         "https://matchwise-ai.vercel.app",
         "http://localhost:3000",
-        "http://localhost:3001"
+        "http://localhost:3001",
+        "http://localhost:8000"
     ])
     
     # API Keys
