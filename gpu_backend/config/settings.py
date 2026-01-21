@@ -85,6 +85,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra fields from .env
 
 
 class GPUConfig(BaseSettings):
@@ -116,6 +117,7 @@ class GPUConfig(BaseSettings):
     class Config:
         env_file = ".env"
         env_prefix = "GPU_"
+        extra = "ignore"  # Ignore extra fields from .env
 
 
 class ModelConfig(BaseSettings):
@@ -155,6 +157,7 @@ class ModelConfig(BaseSettings):
     class Config:
         env_file = ".env"
         env_prefix = "MODEL_"
+        extra = "ignore"  # Ignore extra fields from .env
 
 
 @lru_cache()
