@@ -1,7 +1,8 @@
-import { Inter } from 'next/font/google';
+import { Inter, Orbitron } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], weight: ['400', '700'] });
+const inter = Inter({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-inter' });
+const orbitron = Orbitron({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-orbitron' });
 
 export const metadata = {
   title: 'SmartSuccess.AI - AI-Powered Career Success Platform',
@@ -15,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning={true}>
+    <html lang="en" className={`${inter.variable} ${orbitron.variable}`} suppressHydrationWarning={true}>
       <body>
         <main className={inter.className}>{children}</main>
       </body>
