@@ -63,15 +63,9 @@ export default function Home() {
       // Clear the buffer so it will retry next time
       greetingBufferRef.current = null;
       
-      // Only show error message if it's not an API key configuration issue
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("GEMINI_API_KEY is not set")) {
-        // Silently fail if API key is not configured - don't show error to user
-        setAudioError(null);
-      } else {
-        // Show error for other issues (network, API errors, etc.)
-        setAudioError("Voice guidance system offline. Check connection or API keys.");
-      }
+      // Silently fail for all errors (API key missing, network errors, quota exceeded, etc.)
+      // Don't show any error message to the user
+      setAudioError(null);
     }
   };
 
