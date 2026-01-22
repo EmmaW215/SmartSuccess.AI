@@ -514,12 +514,14 @@ export default function InterviewPage() {
               </div>
             </div>
           ) : (
-            <Link
-              href="/?login=true"
+            <a
+              href="https://matchwise-ai.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="block w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm text-center"
             >
               Guest User Sign In
-            </Link>
+            </a>
           )}
           <div className="mt-4 text-xs text-gray-400 text-center">
             powered by <span className="font-semibold text-blue-600">SmartSuccess.AI</span>

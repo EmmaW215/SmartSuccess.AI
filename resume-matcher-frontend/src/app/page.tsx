@@ -179,7 +179,7 @@ export default function Home() {
                 <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/20">
                   <Cpu className="text-white w-6 h-6" />
                 </div>
-                <span className="font-orbitron font-bold text-xl tracking-tighter">AI MASTERY</span>
+                <span className="font-orbitron font-bold text-xl tracking-tighter text-white">AI MASTERY</span>
               </div>
               <nav className="hidden md:flex gap-8 text-sm font-medium text-slate-400">
                 <a href="#" className="hover:text-cyan-400 transition-colors">ENGINEERING</a>
