@@ -87,7 +87,7 @@ export default function Home() {
       if (currentSourceRef.current) {
         try {
           currentSourceRef.current.stop();
-        } catch (e) {
+        } catch {
           // Ignore if already stopped
         }
         currentSourceRef.current = null;
@@ -108,7 +108,8 @@ export default function Home() {
     
     // Initialize Audio Context on user gesture
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
     }
 
     // Start the voice loop
