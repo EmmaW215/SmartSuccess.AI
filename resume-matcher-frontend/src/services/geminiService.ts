@@ -1,34 +1,42 @@
 
 import { GoogleGenAI, Modality } from "@google/genai";
 
-// Use process.env.GEMINI_API_KEY for Next.js environment variables
+// Use process.env.NEXT_PUBLIC_GEMINI_API_KEY for Next.js environment variables
 export async function generateSpeech(text: string): Promise<Uint8Array> {
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not set in environment variables");
   }
   
-  const ai = new GoogleGenAI({ apiKey });
-  
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-preview-tts",
-    contents: [{ parts: [{ text }] }],
-    config: {
-      responseModalities: [Modality.AUDIO],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: 'Kore' },
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
         },
       },
-    },
-  });
+    });
 
-  const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!base64Audio) {
-    throw new Error("No audio data returned from Gemini API");
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (!base64Audio) {
+      throw new Error("No audio data returned from Gemini API");
+    }
+
+    return decode(base64Audio);
+  } catch (error) {
+    // Re-throw with more context for debugging
+    if (error instanceof Error) {
+      throw new Error(`Gemini TTS API error: ${error.message}`);
+    }
+    throw error;
   }
-
-  return decode(base64Audio);
 }
 
 // Manual base64 decoding implementation following provided SDK examples.

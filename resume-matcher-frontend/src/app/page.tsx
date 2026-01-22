@@ -38,8 +38,9 @@ export default function Home() {
 
     try {
       setIsSpeaking(true);
+      setAudioError(null); // Clear any previous errors
       
-      // Cache the buffer so we don't call the API every 30 seconds
+      // Cache the buffer so we don't call the API every time
       if (!greetingBufferRef.current) {
         const audioData = await generateSpeech(GREETING_TEXT);
         greetingBufferRef.current = await decodeAudioBuffer(audioData, audioContextRef.current);
@@ -58,8 +59,19 @@ export default function Home() {
       source.start(0);
     } catch (error) {
       console.error("Speech generation or playback failed:", error);
-      setAudioError("Voice guidance system offline. Check connection or API keys.");
       setIsSpeaking(false);
+      // Clear the buffer so it will retry next time
+      greetingBufferRef.current = null;
+      
+      // Only show error message if it's not an API key configuration issue
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("GEMINI_API_KEY is not set")) {
+        // Silently fail if API key is not configured - don't show error to user
+        setAudioError(null);
+      } else {
+        // Show error for other issues (network, API errors, etc.)
+        setAudioError("Voice guidance system offline. Check connection or API keys.");
+      }
     }
   };
 
