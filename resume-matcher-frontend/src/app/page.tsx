@@ -8,7 +8,6 @@ import { generateSpeech, decodeAudioBuffer } from '@/services/geminiService';
 import FloatingIcon from '@/components/FloatingIcon';
 
 const GREETING_TEXT = "Welcome to the AI Evaluation Platform. I am your guide to career excellence. Explore MatchWise to tailor your professional identity, or master your skills with SmartSuccess Mock Interviews. Your journey to AI leadership starts now.";
-const LOOP_INTERVAL_MS = 30000; // 30 seconds between greetings
 
 export default function Home() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -18,15 +17,11 @@ export default function Home() {
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const greetingBufferRef = useRef<AudioBuffer | null>(null);
-  const loopTimeoutRef = useRef<number | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (loopTimeoutRef.current) {
-        window.clearTimeout(loopTimeoutRef.current);
-      }
       if (currentSourceRef.current) {
         currentSourceRef.current.stop();
       }
@@ -58,10 +53,6 @@ export default function Home() {
       source.onended = () => {
         setIsSpeaking(false);
         currentSourceRef.current = null;
-        // Schedule the next play if still enabled
-        if (isVoiceEnabled) {
-          loopTimeoutRef.current = window.setTimeout(playGreeting, LOOP_INTERVAL_MS);
-        }
       };
       
       source.start(0);
@@ -69,10 +60,6 @@ export default function Home() {
       console.error("Speech generation or playback failed:", error);
       setAudioError("Voice guidance system offline. Check connection or API keys.");
       setIsSpeaking(false);
-      // Try again later even if it failed, if enabled
-      if (isVoiceEnabled) {
-        loopTimeoutRef.current = window.setTimeout(playGreeting, LOOP_INTERVAL_MS);
-      }
     }
   };
 
@@ -80,10 +67,6 @@ export default function Home() {
     if (isVoiceEnabled) {
       // Turn OFF
       setIsVoiceEnabled(false);
-      if (loopTimeoutRef.current) {
-        window.clearTimeout(loopTimeoutRef.current);
-        loopTimeoutRef.current = null;
-      }
       if (currentSourceRef.current) {
         try {
           currentSourceRef.current.stop();
@@ -200,7 +183,7 @@ export default function Home() {
               </nav>
               <Link 
                 href="/dashboard" 
-                className="px-5 py-2 rounded-full border border-slate-700 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all text-sm font-medium"
+                className="px-5 py-2 rounded-full border border-slate-700 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all text-sm font-medium text-white"
               >
                 DASHBOARD
               </Link>
@@ -218,7 +201,7 @@ export default function Home() {
                     Evaluation & Career Assessment
                   </h2>
                   <h1 className="text-5xl md:text-8xl font-orbitron font-bold leading-tight mb-8">
-                    Elevate Your AI <br /> 
+                    <span className="text-white">Elevate Your AI</span> <br /> 
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 drop-shadow-[0_0_20px_rgba(6,182,212,0.2)]">
                       Professional Identity
                     </span>
@@ -288,7 +271,7 @@ export default function Home() {
                   <FloatingIcon 
                     label="MATCHWISE: RESUME TAILORING"
                     icon={<FileText className="w-10 h-10 md:w-14 md:h-14" />}
-                    url="/"
+                    url="https://matchwise-ai.vercel.app/"
                     color="#06b6d4"
                     isSpeaking={isSpeaking}
                     initialX="8%"
