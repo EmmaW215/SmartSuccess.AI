@@ -5,8 +5,26 @@ Advanced ASR (Whisper) and TTS (XTTS-v2) for realistic interview experience
 
 import torch
 import numpy as np
-import whisper
-from TTS.api import TTS
+
+# Optional imports with fallback
+try:
+    import whisper
+    WHISPER_AVAILABLE = True
+except ImportError:
+    whisper = None
+    WHISPER_AVAILABLE = False
+    import logging
+    logging.warning("Whisper not available - voice transcription will be disabled")
+
+try:
+    from TTS.api import TTS
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS = None
+    TTS_AVAILABLE = False
+    import logging
+    logging.warning("TTS not available - text-to-speech will be disabled")
+
 import io
 import base64
 import logging
@@ -15,9 +33,27 @@ import tempfile
 import os
 from typing import Optional, Dict, Any, Tuple
 from pathlib import Path
-import soundfile as sf
-import librosa
-import noisereduce as nr
+
+try:
+    import soundfile as sf
+    SOUNDFILE_AVAILABLE = True
+except ImportError:
+    sf = None
+    SOUNDFILE_AVAILABLE = False
+
+try:
+    import librosa
+    LIBROSA_AVAILABLE = True
+except ImportError:
+    librosa = None
+    LIBROSA_AVAILABLE = False
+
+try:
+    import noisereduce as nr
+    NOISEREDUCE_AVAILABLE = True
+except ImportError:
+    nr = None
+    NOISEREDUCE_AVAILABLE = False
 
 from config import get_settings, get_model_config, get_device, is_gpu_available, get_data_path
 from models.schemas import (
@@ -91,14 +127,17 @@ class VoiceService:
         self.model_config = get_model_config()
         self.device = get_device()
         
-        self.whisper_model: Optional[whisper.Whisper] = None
-        self.tts_model: Optional[TTS] = None
+        self.whisper_model: Optional[Any] = None
+        self.tts_model: Optional[Any] = None
         self.voice_presets_dir = get_data_path("voice_presets")
         
         self._initialized = True
         logger.info(f"VoiceService initialized on device: {self.device}")
     
     def load_whisper(self) -> bool:
+        if not WHISPER_AVAILABLE:
+            logger.warning("Whisper not available - transcription disabled")
+            return False
         """Load Whisper ASR model"""
         if self.whisper_model is not None:
             return True
@@ -125,6 +164,9 @@ class VoiceService:
             return False
     
     def load_tts(self) -> bool:
+        if not TTS_AVAILABLE:
+            logger.warning("TTS not available - speech synthesis disabled")
+            return False
         """Load TTS model (XTTS-v2)"""
         if self.tts_model is not None:
             return True
@@ -133,6 +175,8 @@ class VoiceService:
             logger.info(f"Loading TTS model: {self.model_config.TTS_MODEL_NAME}")
             start_time = time.time()
             
+            if not TTS_AVAILABLE:
+                raise ImportError("TTS not available")
             self.tts_model = TTS(self.model_config.TTS_MODEL_NAME)
             
             if self.device == "cuda":
@@ -173,6 +217,8 @@ class VoiceService:
                 tmp_path = tmp.name
             
             # Load and preprocess audio
+            if not WHISPER_AVAILABLE:
+                raise ImportError("Whisper not available")
             audio = whisper.load_audio(tmp_path)
             audio = whisper.pad_or_trim(audio)
             
